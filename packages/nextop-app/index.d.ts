@@ -1,4 +1,8 @@
 import { MenuItemConstructorOptions } from "./src/hooks/useMenu"
+import type { MenuItemConstructorOptions } from 'electron'
+
+export type NextopAppMenuItem = MenuItemConstructorOptions
+
 
 declare global {
   interface Window {
@@ -13,6 +17,10 @@ declare global {
         close(): void
         unmaximize(): void
         isMaximized(): Promise<boolean>
+      },
+      menu?: {
+        menu: NextopAppMenuItem[]
+        setMenu: (newMenu: NextopAppMenuItem[]) => void
       }
     }
   }

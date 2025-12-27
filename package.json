@@ -12,6 +12,7 @@
     "dev": "npm run dev --workspaces"
   },
   "dependencies": {
+    "electron": "^39.2.7",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   },
