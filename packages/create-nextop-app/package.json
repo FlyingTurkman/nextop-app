@@ -1,0 +1,25 @@
+{
+  "name": "create-nextop-app",
+  "version": "0.0.1",
+  "description": "NextOP framework starter CLI",
+  "main": "./dist/index.js",
+  "bin": {
+    "create-nextop-app": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "npx tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "chalk": "^5.0.0",
+    "commander": "^11.0.0",
+    "fs-extra": "^11.0.0",
+    "inquirer": "^9.0.0",
+    "nextop": "0.0.1",
+    "path": "^0.12.7",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4"
+  }
+}

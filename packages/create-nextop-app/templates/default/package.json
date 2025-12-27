@@ -1,0 +1,38 @@
+{
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/electron/main.js",
+  "bin": {
+    "nextop": "bin/nextop.ts"
+  },
+  "scripts": {
+    "dev": "electron .",
+    "next": "next dev",
+    "dev2": "nextop dev",
+    "build": "npx tsc -p tsconfig.electron.json --watch",
+    "build2": "tsc -p tsconfig.json && npm run copy-assets",
+    "copy-assets": "npx cpx \"electron/assets/**/*\" dist/electron/assets"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "electron": "^39.2.7",
+    "get-port": "^7.1.0",
+    "next": "^16.1.0",
+    "postcss": "^8.5.6",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "tailwindcss": "^4.1.18",
+    "nextop": "0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "cpx": "^1.5.0"
+  }
+}
