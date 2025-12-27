@@ -19,7 +19,7 @@ app.whenReady().then(async () => {
     nextServer = await startNextServer(
         process.cwd(),
         !app.isPackaged,
-        3000
+        5005
     )
 
     mainWindow = new BrowserWindow({
