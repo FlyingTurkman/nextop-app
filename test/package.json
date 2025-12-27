@@ -6,7 +6,7 @@
     "nextop": "bin/nextop.ts"
   },
   "scripts": {
-    "dev": "electron .",
+    "dev": "nextop dev",
     "next": "next dev",
     "dev2": "nextop dev",
     "build": "npx tsc -p tsconfig.electron.json --watch",
@@ -36,5 +36,6 @@
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "cpx": "^1.5.0"
-  }
+  },
+  "name": "test"
 }
