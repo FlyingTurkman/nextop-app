@@ -15,7 +15,6 @@
     "commander": "^11.0.0",
     "fs-extra": "^11.0.0",
     "inquirer": "^9.0.0",
-    "nextop": "0.0.1",
     "path": "^0.12.7",
     "typescript": "^5.9.3"
   },

@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "",
   "main": "./dist/index.js",
+  "type": "module",
   "types": "./dist/index.d.ts",
   "bin": {
     "nextop": "./bin/cli.js"

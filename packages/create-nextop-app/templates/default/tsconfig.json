@@ -35,6 +35,9 @@
     ]
   },
   "include": [
+    "main.ts",
+    "preload.ts",
+    "window.ts",
     "types.ts",
     "types.d.ts",
     ".next/types/**/*.ts",

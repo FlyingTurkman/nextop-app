@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-const { spawn, execSync } = require('child_process')
-const path = require('path')
+
+import { spawn, execSync } from 'child_process'
+import path from 'path'
 
 
 
@@ -31,6 +32,23 @@ async function run() {
       process.exit(code)
     })
   }
+}
+
+export async function devCommand() {
+  const projectRoot = process.cwd();
+
+  console.log('Electron dosyaları derleniyor...')
+  try {
+    execSync('npx tsc --outDir dist', { stdio: 'inherit', cwd: projectRoot })
+    console.log('✅ Derleme başarılı.')
+  } catch (err) {
+    console.error('Derleme hatası: Electron kodlarında hata var.')
+    process.exit(1)
+  }
+  const electronProcess = spawn('npx', ['electron', '.'], {
+    stdio: 'inherit',
+    shell: true
+  })
 }
 
 run()
