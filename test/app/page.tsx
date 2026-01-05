@@ -26,13 +26,9 @@ export default function Page() {
             height={256}
             alt='logo'
             />
-            <Link
-            href={'https://github.com/FlyingTurkman/nextop-app'}
-            className='underline text-lg font-semibold'
-            about='_blank'
-            >
-                NextOP
-            </Link>
+            <label>
+                For contrubition <Link href={'https://github.com/FlyingTurkman/nextop-app'} className='underline text-lg font-semibold'>NextOP</Link>
+            </label>
         </main>
     )
 }
