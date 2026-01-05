@@ -6,6 +6,7 @@
   "bin": {
     "create-nextop-app": "./dist/index.js"
   },
+  "type": "module",
   "publishConfig": {
     "access": "public"
   },
@@ -30,5 +31,8 @@
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
     "@types/prompts": "^2.4.9"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }
