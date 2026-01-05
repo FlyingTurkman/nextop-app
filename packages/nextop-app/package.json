@@ -12,6 +12,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.js"
+    },
+    "./main": {
+      "types": "./dist/main/index.d.ts",
+      "import": "./dist/main/index.js",
+      "require": "./dist/main/index.js"
     }
   },
   "files": [

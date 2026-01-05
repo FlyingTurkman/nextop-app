@@ -6,7 +6,7 @@
     // "outDir": "./dist",
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "commonjs",
+    "module": "nodenext",
     "target": "es2020",
     "types": [],
     // For nodejs:
@@ -15,7 +15,7 @@
       "DOM"
     ],
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
     "skipDefaultLibCheck": true,
     "outDir": "dist",
     "rootDir": ".",

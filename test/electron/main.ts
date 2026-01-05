@@ -4,7 +4,7 @@ import { startNextServer } from "./startNext"
 import { registerWindowHandlers } from "./window"
 import fs from 'fs/promises'
 import { NextServerHandleType } from "./types"
-
+import { registerNextOP } from 'nextop-app/main'
 
 
 let mainWindow: BrowserWindow | null = null
@@ -19,7 +19,7 @@ app.whenReady().then(async () => {
     nextServer = await startNextServer(
         process.cwd(),
         !app.isPackaged,
-        5005
+        3000
     )
 
     mainWindow = new BrowserWindow({
@@ -51,7 +51,7 @@ app.on("before-quit", async () => {
     }
 })
 
-ipcMain.handle("fs:readFile", async (_event, filePath: string) => {
+/* ipcMain.handle("fs:readFile", async (_event, filePath: string) => {
     return await fs.readFile(filePath, "utf-8")
 })
 
@@ -69,4 +69,4 @@ ipcMain.handle("window:isMaximized", (_event) => {
     const win = BrowserWindow.fromWebContents(_event.sender)
 
     return win ? win.isMaximizable() : false
-} )
+} ) */
