@@ -9,7 +9,7 @@ async function run() {
   const command = process.argv[2]
 
   if (command === 'dev') {
-    console.log('⚡ NextOP: Electron süreci başlatılıyor...')
+    console.log('NextOP running...')
 
     try {
       execSync('taskkill /F /IM electron.exe /T', { stdio: 'ignore' })
@@ -27,7 +27,7 @@ async function run() {
     })
 
     electron.on('close', (code) => {
-      console.log(`✅ Electron ${code} kodu ile kapandı.`)
+      console.log(`✅ Electron closed by ${code}.`)
       process.exit(code)
     })
   }

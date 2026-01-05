@@ -1,8 +1,7 @@
-import { app, BrowserWindow, ipcMain, IpcMainEvent, Menu, MenuItemConstructorOptions, Notification, pushNotifications } from "electron"
+import { app, BrowserWindow } from "electron"
 import path from "path"
 import { startNextServer } from "./startNext"
 import { registerWindowHandlers } from "./window"
-import fs from 'fs/promises'
 import { NextServerHandleType } from "./types"
 import { registerNextOP } from 'nextop-app/main'
 
