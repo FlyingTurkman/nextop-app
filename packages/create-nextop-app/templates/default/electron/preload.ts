@@ -15,3 +15,7 @@ contextBridge.exposeInMainWorld("desktop", {
     setMenu: (template: MenuItemConstructorOptions[]) => ipcRenderer.send('set-menu', template)
   }
 })
+
+contextBridge.exposeInMainWorld('nextop', {
+  openExternal: (url: string) => ipcRenderer.send('open-external', url)
+})

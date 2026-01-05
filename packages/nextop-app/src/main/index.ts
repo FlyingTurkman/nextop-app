@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow, Menu, IpcMainEvent, MenuItemConstructorOptions } from "electron"
+import { ipcMain, BrowserWindow, Menu, IpcMainEvent, MenuItemConstructorOptions, shell } from "electron"
 import fs from 'fs/promises'
 
 
@@ -23,6 +23,12 @@ export function registerNextOP() {
         const win = BrowserWindow.fromWebContents(_event.sender)
 
         return win ? win.isMaximizable() : false
+    })
+
+    ipcMain.on('open-external', (_, url) => {
+        if (url) {
+            shell.openExternal(url)
+        }
     })
 }
 

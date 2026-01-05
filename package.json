@@ -9,7 +9,8 @@
   "main": "index.js",
   "scripts": {
     "build": "npm run build --workspaces",
-    "dev": "npm run dev --workspaces"
+    "dev": "npm run dev --workspaces",
+    "build-dev": "cd packages & cd create-nextop-app & npm run build & npm link & cd .. & cd nextop-app & npm run build & npm link & cd .. & cd .. & cd test & npm link nextop-app"
   },
   "dependencies": {
     "electron": "^39.2.7",
