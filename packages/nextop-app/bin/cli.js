@@ -11,7 +11,7 @@ async function run() {
   const root = process.cwd();
 
   if (command === 'dev') {
-    console.log('NextOP Dev süreci başlıyor...')
+    console.log('NextOP starting...')
     try {
       if (process.platform === 'win32') {
         execSync('taskkill /F /IM electron.exe /T', { stdio: 'ignore' })
@@ -21,20 +21,19 @@ async function run() {
     }
 
     try {
-      console.log("Electron kodları derleniyor (tsc)...")
+      console.log("Compiling...")
       execSync('npx tsc -p tsconfig.json', { cwd: root, stdio: 'inherit' })
       
-      console.log("Assetler kopyalanıyor...")
+      console.log("Assets copying...")
       execSync('npx cpx "electron/assets/**/*" dist/electron/assets', { cwd: root, stdio: 'inherit' })
 
-      console.log("Build ve Copy işlemleri başarılı.")
+      console.log("Build completed.")
     } catch (error) {
-      console.error("Hazırlık aşamasında (tsc veya cpx) hata oluştu!")
+      console.error("An error has occured while building!")
       process.exit(1);
     }
 
-    // 3. HER ŞEY HAZIR, ELECTRON'U ŞİMDİ FIRLAT
-    console.log("NextOP başlatılıyor...");
+    console.log("NextOP starting...");
     const electron = spawn('npx', ['electron', '.'], {
       cwd: root,
       stdio: 'inherit',
@@ -47,7 +46,7 @@ async function run() {
     })
 
     electron.on('close', (code) => {
-      console.log(`Electron süreci ${code} kodu ile kapandı.`)
+      console.log(`Electron closed by code: ${code}.`)
       process.exit(code ?? 0)
     })
   }
