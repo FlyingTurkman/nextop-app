@@ -8,6 +8,14 @@
   "bin": {
     "nextop": "./bin/cli.js"
   },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FlyingTurkman/nextop-app",
+    "directory": "packages/nextop-app"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
