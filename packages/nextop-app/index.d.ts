@@ -19,7 +19,8 @@ declare global {
       menu?: {
         menu: NextopAppMenuItem[]
         setMenu: (newMenu: NextopAppMenuItem[]) => void
-      }
+      },
+      show?: void
     }
   }
 }

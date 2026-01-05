@@ -1,10 +1,10 @@
-import { ipcMain, BrowserWindow, Menu, IpcMainEvent, MenuItemConstructorOptions, shell } from "electron"
+import { ipcMain, BrowserWindow, Menu, IpcMainEvent, MenuItemConstructorOptions, shell, Notification } from "electron"
 import fs from 'fs/promises'
 
 
 
 
-export function registerNextOP() {
+export function registerNextOP(mainWindow: BrowserWindow | null) {
     ipcMain.handle("fs:readFile", async (_event, filePath: string) => {
     return await fs.readFile(filePath, "utf-8")
     })
@@ -25,10 +25,36 @@ export function registerNextOP() {
         return win ? win.isMaximizable() : false
     })
 
-    ipcMain.on('open-external', (_, url) => {
+    ipcMain.on('open-external', (_event, url) => {
         if (url) {
             shell.openExternal(url)
         }
+    })
+
+    ipcMain.on('show-notification', (_event, options: { title: string, body: string }) => {
+
+        if (!Notification.isSupported()) {
+            console.log('Operation system is not supporting notification system.')
+            return
+        }
+        const notification = new Notification({
+            title: options.title,
+            body: options.body
+        })
+
+        notification.show()
+
+        notification.on('failed', (event, error) => {
+            console.error('Notification failed:', error)
+        })
+
+        notification.on('click', () => {
+        if (mainWindow) {
+            if (mainWindow.isMinimized()) mainWindow.restore()
+            mainWindow.show()
+            mainWindow.focus()
+        }
+        })
     })
 }
 

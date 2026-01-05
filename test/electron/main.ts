@@ -21,7 +21,7 @@ app.whenReady().then(async () => {
         3000
     )
 
-    registerNextOP()
+    registerNextOP(mainWindow)
 
     mainWindow = new BrowserWindow({
         width: 1200,

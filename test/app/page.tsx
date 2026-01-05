@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useFs, useWindow, useMenu } from 'nextop-app'
+import { useFs, useWindow, useMenu, useNotification } from 'nextop-app'
 import Link from 'nextop-app/link'
 
 
@@ -14,6 +14,7 @@ export default function Page() {
     const { writeFile } = useFs()
     const { close, maximize, minimize } = useWindow()
     const [menu, setMenu] = useMenu()
+    const { showNotification } = useNotification()
 
     return (
         <main
@@ -86,6 +87,16 @@ export default function Page() {
             }}
             >
                 Set Menu
+            </button>
+            <button
+            onClick={() => {
+                showNotification({
+                    title: 'test',
+                    body: 'test'
+                })
+            }}
+            >
+                Show Notification
             </button>
         </main>
     )
