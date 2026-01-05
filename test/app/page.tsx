@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useFs, useWindow } from 'nextop-app'
+import { useFs, useWindow, useMenu } from 'nextop-app'
 import Link from 'nextop-app/link'
 
 
@@ -13,6 +13,7 @@ export default function Page() {
 
     const { writeFile } = useFs()
     const { close, maximize, minimize } = useWindow()
+    const [menu, setMenu] = useMenu()
 
     return (
         <main
@@ -67,8 +68,25 @@ export default function Page() {
                 >
                     Close
                 </button>
-
             </div>
+            <button
+            onClick={() => {
+                setMenu([
+                    {
+                        label: 'Test',
+                        submenu: [
+                            {
+                                label: 'test1'
+                            }
+                        ]
+                    }
+                ])
+
+                console.log('Menu', menu[0])
+            }}
+            >
+                Set Menu
+            </button>
         </main>
     )
 }

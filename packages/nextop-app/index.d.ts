@@ -1,7 +1,5 @@
-import { MenuItemConstructorOptions } from "./src/hooks/useMenu"
 import type { MenuItemConstructorOptions } from 'electron'
 
-export type NextopAppMenuItem = MenuItemConstructorOptions
 
 
 declare global {
