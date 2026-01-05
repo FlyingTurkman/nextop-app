@@ -13,7 +13,12 @@ npx create-nextop-app app-name
 
 ## nextop-app hooks
 
+useWindow, useFs, useMenu are currently nextop hooks.
+I am still developing hooks for developer friendly library.
+
 There is an example for nextop-app hooks
+
+
 ```tsx
 'use client'
 
