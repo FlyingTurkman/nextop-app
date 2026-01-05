@@ -8,16 +8,35 @@ import path from 'path'
 
 async function run() {
   const command = process.argv[2]
+  const root = process.cwd();
 
   if (command === 'dev') {
-    console.log('NextOP running...')
-
+    console.log('NextOP Dev süreci başlıyor...')
     try {
-      execSync('taskkill /F /IM electron.exe /T', { stdio: 'ignore' })
+      if (process.platform === 'win32') {
+        execSync('taskkill /F /IM electron.exe /T', { stdio: 'ignore' })
+      }
     } catch (e) {
+
     }
 
+    try {
+      console.log("Electron kodları derleniyor (tsc)...")
+      execSync('npx tsc -p tsconfig.json', { cwd: root, stdio: 'inherit' })
+      
+      console.log("Assetler kopyalanıyor...")
+      execSync('npx cpx "electron/assets/**/*" dist/electron/assets', { cwd: root, stdio: 'inherit' })
+
+      console.log("Build ve Copy işlemleri başarılı.")
+    } catch (error) {
+      console.error("Hazırlık aşamasında (tsc veya cpx) hata oluştu!")
+      process.exit(1);
+    }
+
+    // 3. HER ŞEY HAZIR, ELECTRON'U ŞİMDİ FIRLAT
+    console.log("NextOP başlatılıyor...");
     const electron = spawn('npx', ['electron', '.'], {
+      cwd: root,
       stdio: 'inherit',
       shell: true,
       env: { 
@@ -28,27 +47,10 @@ async function run() {
     })
 
     electron.on('close', (code) => {
-      console.log(`✅ Electron closed by ${code}.`)
-      process.exit(code)
+      console.log(`Electron süreci ${code} kodu ile kapandı.`)
+      process.exit(code ?? 0)
     })
   }
-}
-
-export async function devCommand() {
-  const projectRoot = process.cwd();
-
-  console.log('Electron dosyaları derleniyor...')
-  try {
-    execSync('npx tsc --outDir dist', { stdio: 'inherit', cwd: projectRoot })
-    console.log('✅ Derleme başarılı.')
-  } catch (err) {
-    console.error('Derleme hatası: Electron kodlarında hata var.')
-    process.exit(1)
-  }
-  const electronProcess = spawn('npx', ['electron', '.'], {
-    stdio: 'inherit',
-    shell: true
-  })
 }
 
 run()

@@ -7,10 +7,7 @@
   },
   "scripts": {
     "dev": "nextop dev",
-    "build": "nextop build",
-    "build2": "npx tsc -p tsconfig.electron.json --watch",
-    "build3": "tsc -p tsconfig.json && npm run copy-assets",
-    "copy-assets": "npx cpx \"electron/assets/**/*\" dist/electron/assets"
+    "build": "nextop build"
   },
   "keywords": [],
   "author": "",
