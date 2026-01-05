@@ -33,8 +33,8 @@ program
   .name('create-nextop-app')
   .description('Create a new NextOP app')
   .argument('[project-directory]', 'Project directory')
-  .action(async (projectDir) => {
-    let targetDir = projectDir;
+  .action(async (projectDir: string) => {
+    let targetDir = projectDir
 
     if (!targetDir) {
       const response = await prompts({

@@ -33,6 +33,7 @@
     "@types/prompts": "^2.4.9"
   },
   "files": [
-    "dist"
+    "dist",
+    "templates"
   ]
 }
