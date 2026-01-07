@@ -1,3 +1,4 @@
+import { exec } from "child_process"
 import { ipcMain, BrowserWindow, Menu, IpcMainEvent, MenuItemConstructorOptions, shell, Notification } from "electron"
 import fs from 'fs/promises'
 
@@ -6,7 +7,7 @@ import fs from 'fs/promises'
 
 export function registerNextOP(mainWindow: BrowserWindow | null) {
     ipcMain.handle("fs:readFile", async (_event, filePath: string) => {
-    return await fs.readFile(filePath, "utf-8")
+        return await fs.readFile(filePath, "utf-8")
     })
 
     ipcMain.handle("fs:writeFile", async (_event, filePath: string, content: string) => {
@@ -54,6 +55,19 @@ export function registerNextOP(mainWindow: BrowserWindow | null) {
             mainWindow.show()
             mainWindow.focus()
         }
+        })
+    })
+
+    ipcMain.handle('shell-execute', async (_event, command: string) => {
+        return new Promise((resolve) => {
+            exec(command, (error, stdout, stderr) => {
+                resolve({
+                    success: !error,
+                    stdout: stdout.trim(),
+                    stderr: stderr.trim(),
+                    error: error? error.message : null
+                })
+            })
         })
     })
 }

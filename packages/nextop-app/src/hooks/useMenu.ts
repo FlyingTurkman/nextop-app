@@ -41,9 +41,7 @@ export function useMenu(): [NextopAppMenuItem[], (newMenu: NextopAppMenuItem[] |
         _setInternalMenu(resolvedMenu)
       }
     }
-  }, [menu]);
-
-  //return [menu, setMenu] as [NextopAppMenuItem[], (newMenu: NextopAppMenuItem[]) => void]
+  }, [menu])
 
   return [
     menu, 

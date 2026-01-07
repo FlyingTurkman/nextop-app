@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useFs, useWindow, useMenu, useNotification } from 'nextop-app'
+import { useFs, useWindow, useMenu, useNotification, useShell } from 'nextop-app'
 import Link from 'nextop-app/link'
 
 
@@ -15,6 +15,7 @@ export default function Page() {
     const { close, maximize, minimize } = useWindow()
     const [menu, setMenu] = useMenu()
     const { showNotification } = useNotification()
+    const { execute } = useShell()
 
     return (
         <main
@@ -97,6 +98,19 @@ export default function Page() {
             }}
             >
                 Show Notification
+            </button>
+            <button
+            onClick={async () => {
+                const result = await execute('node -v')
+
+                if (result.success) {
+                    window.alert('Node: ' + result.stdout)
+                } else {
+                    window.alert('Error: ' + result.error)
+                }
+            }}
+            >
+                useShell
             </button>
         </main>
     )
