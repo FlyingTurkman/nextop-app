@@ -86,11 +86,7 @@ export function registerNextOP(mainWindow: BrowserWindow | null) {
 
     ipcMain.on('open-internal-window', (_event, url: string, options?: BrowserWindowConstructorOptions) => {
 
-        console.log('opt', options)
-
-        const { webPreferences = {}, ...rest } = options ?? {}
-
-        
+        const { webPreferences = {}, ...rest } = options ?? {}  
 
         const newWindow = new BrowserWindow({
             width: rest.width ?? 800,
