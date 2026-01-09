@@ -1,5 +1,5 @@
 import { exec } from "child_process"
-import { ipcMain, BrowserWindow, Menu, IpcMainEvent, MenuItemConstructorOptions, shell, Notification } from "electron"
+import { ipcMain, BrowserWindow, Menu, IpcMainEvent, MenuItemConstructorOptions, shell, Notification, clipboard } from "electron"
 import fs from 'fs/promises'
 
 
@@ -69,6 +69,16 @@ export function registerNextOP(mainWindow: BrowserWindow | null) {
                 })
             })
         })
+    })
+
+    ipcMain.on('write-clipboard', (_event, { text, type = 'clipboard' }: { text: string, type?: 'clipboard' | 'selection' }) => {
+        clipboard.writeText(text, type)
+    })
+
+    ipcMain.handle('read-clipboard', (_event, selection?: 'selection' | 'clipboard') => {
+
+        console.log('handle')
+        return clipboard.readText(selection ?? 'clipboard')
     })
 }
 

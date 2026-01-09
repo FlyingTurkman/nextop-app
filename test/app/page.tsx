@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useFs, useWindow, useMenu, useNotification, useShell } from 'nextop-app'
+import { useFs, useWindow, useMenu, useNotification, useShell, useClipboard } from 'nextop-app'
 import Link from 'nextop-app/link'
 
 
@@ -16,6 +16,7 @@ export default function Page() {
     const [menu, setMenu] = useMenu()
     const { showNotification } = useNotification()
     const { execute } = useShell()
+    const { readText, writeText } = useClipboard()
 
     return (
         <main
@@ -111,6 +112,16 @@ export default function Page() {
             }}
             >
                 useShell
+            </button>
+            <button
+            onClick={async () => {
+                writeText({ text: 'test', type: 'clipboard' })
+
+                const result = await readText({})
+                console.log('read', result)
+            }}
+            >
+                Read
             </button>
         </main>
     )
