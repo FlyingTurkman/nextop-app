@@ -87,7 +87,7 @@ export function registerNextOP(mainWindow: BrowserWindow | null) {
     ipcMain.on('open-internal-window', (_event, url: string, options?: BrowserWindowConstructorOptions) => {
 
         console.log('opt', options)
-        
+
         const { webPreferences = {}, ...rest } = options ?? {}
 
         
@@ -96,7 +96,7 @@ export function registerNextOP(mainWindow: BrowserWindow | null) {
             width: rest.width ?? 800,
             height: rest.height ?? 600,
             autoHideMenuBar: rest.autoHideMenuBar ?? true,
-            icon: rest.icon ?? path.join(__dirname, "favicon.ico"),
+            icon: rest.icon ?? path.join(__dirname, "assets", "favicon.ico"),
             ...rest, 
             webPreferences: {
                 preload: path.join(__dirname, '../preload/index.mjs'), 

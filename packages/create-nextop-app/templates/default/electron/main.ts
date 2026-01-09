@@ -26,7 +26,7 @@ app.whenReady().then(async () => {
     mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
-        icon: path.join(__dirname, "favicon.ico"),
+        icon: path.join(__dirname, "assets", "favicon.ico"),
         webPreferences: {
             preload: path.join(__dirname, "preload.js"),
             contextIsolation: true,
@@ -34,7 +34,7 @@ app.whenReady().then(async () => {
         }
     })
 
-    mainWindow.setIcon(path.join(__dirname, 'assets', 'favicon.ico'))
+    mainWindow.setIcon(path.join(__dirname, "assets", "favicon.ico"))
 
     registerWindowHandlers(mainWindow)
 
