@@ -1,9 +1,12 @@
 import { exec } from "child_process"
-import { ipcMain, BrowserWindow, Menu, IpcMainEvent, MenuItemConstructorOptions, shell, Notification, clipboard } from "electron"
+import { ipcMain, BrowserWindow, Menu, IpcMainEvent, MenuItemConstructorOptions, shell, Notification, clipboard, BrowserWindowConstructorOptions } from "electron"
 import fs from 'fs/promises'
+import path from "path"
+import { fileURLToPath } from "url"
 
 
-
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 export function registerNextOP(mainWindow: BrowserWindow | null) {
     ipcMain.handle("fs:readFile", async (_event, filePath: string) => {
@@ -79,6 +82,31 @@ export function registerNextOP(mainWindow: BrowserWindow | null) {
 
         console.log('handle')
         return clipboard.readText(selection ?? 'clipboard')
+    })
+
+    ipcMain.on('open-internal-window', (_event, url: string, options?: BrowserWindowConstructorOptions) => {
+
+        console.log('opt', options)
+        
+        const { webPreferences = {}, ...rest } = options ?? {}
+
+        
+
+        const newWindow = new BrowserWindow({
+            width: rest.width ?? 800,
+            height: rest.height ?? 600,
+            autoHideMenuBar: rest.autoHideMenuBar ?? true,
+            icon: rest.icon ?? path.join(__dirname, "favicon.ico"),
+            ...rest, 
+            webPreferences: {
+                preload: path.join(__dirname, '../preload/index.mjs'), 
+                contextIsolation: true,
+                nodeIntegration: false,
+                ...webPreferences 
+            }
+        })
+
+        newWindow.loadURL(url)
     })
 }
 

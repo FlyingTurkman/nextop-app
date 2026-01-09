@@ -34,7 +34,10 @@ export default function Page() {
             alt='logo'
             />
             <label>
-                For contrubition <Link className="font-semibold underline" isExternal={false} href={'https://github.com/FlyingTurkman/nextop-app'}>Github</Link>
+                For contrubition <Link className="font-semibold underline" internalOptions={{
+                    width: 1200,
+                    height: 1000
+                }} target='_blank' isExternal={false} href={'https://github.com/FlyingTurkman/nextop-app'}>Github</Link>
             </label>
             <button
             className='p-2 bg-[#1a1a1a] text-white rounded-md cursor-pointer'
