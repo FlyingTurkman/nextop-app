@@ -1,13 +1,33 @@
 
 import { useState, useCallback } from 'react'
-import { NextopAppMenuItem } from '../../index';
-
-export function useMenu() {
 
 
-  const [menu, _setInternalMenu] = useState(() => {
-    if (typeof window !== 'undefined' && window.desktop?.menu) {
-      return (window.desktop.menu as any).menu || []
+export type NextopAppMenuItem = {
+  label?: string
+  type?: 'normal' | 'separator' | 'submenu' | 'checkbox' | 'radio'
+  click?: () => void
+  role?: 
+    | 'undo' | 'redo' | 'cut' | 'copy' | 'paste' | 'pasteandmatchstyle' | 'selectall' | 'delete' 
+    | 'minimize' | 'close' | 'quit' | 'reload' | 'forcereload' | 'toggledevtools' 
+    | 'resetzoom' | 'zoomin' | 'zoomout' | 'togglefullscreen' | 'window' | 'help' 
+    | 'about' | 'services' | 'hide' | 'hideothers' | 'unhide' | 'showhelp' | 'front'
+  accelerator?: string
+  submenu?: NextopAppMenuItem[]
+  enabled?: boolean
+  visible?: boolean
+  checked?: boolean
+  id?: string
+  toolTip?: string
+  registerAccelerator?: boolean
+  sublabel?: string
+  icon?: string
+}
+
+export function useMenu(): [NextopAppMenuItem[], (newMenu: NextopAppMenuItem[] | ((prev: NextopAppMenuItem[]) => NextopAppMenuItem[])) => void] {
+
+  const [menu, _setInternalMenu] = useState<NextopAppMenuItem[]>(() => {
+    if (typeof window !== 'undefined' && (window as any).desktop?.menu) {
+      return (window as any).desktop.menu.menu || []
     }
     return []
   })
@@ -21,7 +41,14 @@ export function useMenu() {
         _setInternalMenu(resolvedMenu)
       }
     }
-  }, [menu]);
+  }, [menu])
 
-  return [menu, setMenu] as [NextopAppMenuItem[], (newMenu: NextopAppMenuItem[]) => void]
+  return [
+    menu, 
+    setMenu
+  ] as [
+    NextopAppMenuItem[], 
+    (value: NextopAppMenuItem[] | ((prev: NextopAppMenuItem[]) => NextopAppMenuItem[])) => void
+  ]
+
 }
