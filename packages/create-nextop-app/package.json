@@ -1,6 +1,6 @@
 {
   "name": "create-nextop-app",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "NextOP framework starter CLI",
   "main": "./dist/index.js",
   "bin": {
