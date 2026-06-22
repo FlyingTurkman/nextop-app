@@ -15,21 +15,40 @@ import { NextServerHandleType } from './types'
 export async function startNextServer(
     dir: string,
     dev: boolean,
-    port: number
+    preferredPort: number = 3000
 ): Promise<NextServerHandleType> {
 
     const app = next({ dir, dev })
     const handler = app.getRequestHandler()
-    
+
     await app.prepare()
 
     const server = http.createServer((req, res) => {
         handler(req, res)
     })
 
-    await new Promise<void>((resolve) => {
+    // Önce tercih edilen portu dene; doluysa (EADDRINUSE) OS'tan boş bir port iste (port 0).
+    // Sunucunun kendisi portu bağladığı için ayrı port-bulma adımıyla oluşan race-condition yoktur.
+    const port = await new Promise<number>((resolve, reject) => {
+        const tryListen = (candidate: number, isRetry: boolean) => {
+            const onError = (error: NodeJS.ErrnoException) => {
+                server.removeListener('error', onError)
+                if (!isRetry && error.code === 'EADDRINUSE') {
+                    tryListen(0, true)
+                } else {
+                    reject(error)
+                }
+            }
 
-        server.listen(port, () => resolve())
+            server.once('error', onError)
+            server.listen(candidate, () => {
+                server.removeListener('error', onError)
+                const address = server.address()
+                resolve(typeof address === 'object' && address ? address.port : candidate)
+            })
+        }
+
+        tryListen(preferredPort, false)
     })
 
     return {

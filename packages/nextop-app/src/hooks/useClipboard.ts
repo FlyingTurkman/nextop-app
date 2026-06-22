@@ -18,7 +18,7 @@ export function useClipboard() {
         const desktop = (window as any).desktop
 
         if (desktop?.ipcRenderer) {
-            return await desktop.ipcRenderer.invoke('read-clipboard', { type })
+            return await desktop.ipcRenderer.invoke('read-clipboard', type)
         }
 
         return ''
