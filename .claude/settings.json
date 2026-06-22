@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(cd packages\\\\nextop-app; npm run build; Write-Output \"--- dist tree ---\"; Get-ChildItem -Recurse dist -File | ForEach-Object { $_.FullName.Replace\\(\"$PWD\\\\\",\"\"\\) })",
+      "PowerShell(npm run build --prefix packages\\\\nextop-app)",
+      "PowerShell(npm run build --prefix packages\\\\create-nextop-app 2>&1)"
+    ]
+  }
+}

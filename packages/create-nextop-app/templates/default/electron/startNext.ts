@@ -41,7 +41,8 @@ export async function startNextServer(
             }
 
             server.once('error', onError)
-            server.listen(candidate, () => {
+            // Yalnızca 127.0.0.1'e bind et: sunucu LAN'a açılmasın, sadece bu makineden erişilsin.
+            server.listen(candidate, '127.0.0.1', () => {
                 server.removeListener('error', onError)
                 const address = server.address()
                 resolve(typeof address === 'object' && address ? address.port : candidate)

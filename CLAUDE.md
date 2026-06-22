@@ -66,11 +66,20 @@ npm run build          # tsc -p tsconfig.build.json → dist/
 npm run build          # tsc → dist/
 
 # Inside a scaffolded app (test/ or a new project)
-npm run dev            # nextop dev  → compiles + launches Electron
-npm run build          # nextop build → NOT YET IMPLEMENTED (missing in cli.js)
+npm run dev            # nextop dev  → compiles Electron + launches Next dev server in-process
+npm run build          # nextop build → next build + Electron compile + electron-builder package
 ```
 
-Note: `bin/cli.js` only implements the `dev` command. **There is no production build / packaging yet.**
+### Production build (`nextop build`)
+`bin/cli.js build`: compile Electron (`tsc`) → copy assets → `next build` → `electron-builder`
+(output in `release/`). Runtime model: `main.ts` runs the Next server **in-process** for both modes —
+dev (`dev=true`, `dir=cwd`) and production (`dev=false`, `dir=app.getAppPath()`). Packaging uses
+`asar: false` (Next cannot read its files from inside an asar archive); `electron` lives in
+`devDependencies` (electron-builder requirement); production `node_modules` (incl. `next`) ship
+automatically. `next.config.mjs` lives at the **project root** (not `app/`) and sets
+`images.unoptimized` (read-only package can't write the optimization cache).
+NOTE: the packaging step downloads platform binaries and is not verified in CI — validate `nextop
+build` in a real scaffolded app.
 
 ## Security Model
 
@@ -113,6 +122,28 @@ type NextOPOptions = {
 - `fs: { mode: 'allowed', allowedRoots: [app.getPath('userData')] }`
 - `shell: { mode: 'none', allowedCommands: [], requireConsent: true }`
 
+### Navigation guards & sandbox
+- `webPreferences.sandbox: true` on both the main window (template) and internally opened windows (library).
+- `registerNextOP` attaches navigation guards (`attachNavigationGuards`): `will-navigate` to a
+  non-`localhost`/`127.0.0.1` origin is blocked (external http(s) opened in the system browser);
+  `setWindowOpenHandler` denies all popups (intentional internal windows go through the
+  `open-internal-window` IPC channel). Guards attach to the existing `mainWindow.webContents` and to
+  every future `web-contents-created`.
+- CSP is intentionally **not** auto-applied — a strict CSP breaks Next.js (HMR `eval`, inline styles).
+  Treat it as per-app, opt-in configuration.
+
+### Next.js backend runs on the user's machine
+A built NextOP app runs a **live Next.js server** (API routes, route handlers, Server Components,
+Server Actions, middleware all execute server-side, in the Electron main process on the end user's
+machine). Security implications for app authors:
+- The server binds to **`127.0.0.1` only** (`startNext.ts`) — not the LAN. `loadURL` uses `127.0.0.1`
+  to match (avoids IPv6/IPv4 mismatch). Do not change this to bind all interfaces.
+- **Never embed central/shared DB credentials** in app code or `.env` — the package ships readable
+  (`asar: false`), so every client would hold the key. Talk to a remote API with per-user tokens
+  instead; an embedded local DB (SQLite) for local data is fine.
+- The localhost API has **no auth by default** and is reachable by other local processes — add your
+  own auth to sensitive route handlers.
+
 ### IPC channel allowlist
 `preload.ts` no longer forwards arbitrary channels. The generic `desktop.ipcRenderer` bridge
 validates every `invoke`/`send`/`on` against an allowlist of known NextOP channels; anything else is
@@ -130,14 +161,15 @@ Note on the port: `startNextServer` now prefers 3000 and falls back to an OS-ass
 - ✅ FIXED: template `main.ts` now calls `registerNextOP` after window creation (was passing a null `mainWindow`).
 - ✅ FIXED: `preload.ts` `isMaximized` (was the typo `isMiximized`, so `useWindow.isMaximized` never fired).
 - ✅ FIXED: `useClipboard` now sends the `type` string to `read-clipboard` (was sending a `{ type }` object the handler couldn't read).
-- OPEN: window IPC handlers are double-registered — in both `registerWindowHandlers` (template) and `registerNextOP` (library).
+- ✅ FIXED: all window IPC handlers (`minimize`/`maximize`/`close`/`isMaximized`) now live only in `registerNextOP` (library), operating on `BrowserWindow.fromWebContents`. The template's `window.ts` / `registerWindowHandlers` were removed.
 
 ## Conventions
 
 - Platform is Windows; shell is PowerShell. The CLI calls `taskkill /F /IM electron.exe` on Windows.
 - TypeScript ESM (`"type": "module"`); the library compiles to `dist/`, and `dist` is what ships.
 - Library source lives in `src/` — **do not edit `dist/` by hand**; edit `src/` and run `npm run build`.
-- `dist/virtual-list` and `dist/components/Link` exist compiled but their `src/` counterparts may be
-  missing; verify the source before changing them.
+- `npm run build` wipes `dist/` first (clean build) so stale artifacts don't accumulate. Every `dist/`
+  file must have a `src/` counterpart; subpath exports in `package.json` (`.`, `./main`, `./link`,
+  `./virtual-list`) must point at real compiled output.
 - Hooks degrade gracefully to `null`/no-op when `window.desktop` is absent (web compatibility) — keep this pattern.
 ```

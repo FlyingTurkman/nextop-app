@@ -1,5 +1,5 @@
 import { spawn } from "child_process"
-import { ipcMain, BrowserWindow, Menu, IpcMainEvent, MenuItemConstructorOptions, shell, Notification, clipboard, BrowserWindowConstructorOptions, dialog } from "electron"
+import { app, ipcMain, BrowserWindow, Menu, IpcMainEvent, MenuItemConstructorOptions, shell, Notification, clipboard, BrowserWindowConstructorOptions, dialog, WebContents } from "electron"
 import fs from 'fs/promises'
 import path from "path"
 import { fileURLToPath } from "url"
@@ -7,6 +7,41 @@ import { fileURLToPath } from "url"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+
+
+/** URL uygulamanın kendi origin'i mi? (Next sunucusu her zaman localhost/127.0.0.1.) */
+function isInternalUrl(url: string): boolean {
+    try {
+        const { hostname } = new URL(url)
+        return hostname === 'localhost' || hostname === '127.0.0.1'
+    } catch {
+        return false
+    }
+}
+
+/**
+ * Navigasyon guard'ları: XSS sonrası yönlendirme/popup saldırılarına karşı.
+ * - Uygulama origin'i dışına gezinmeyi engeller; harici http(s) linkleri sistem tarayıcısında açar.
+ * - window.open / target=_blank kaynaklı tüm popup'ları reddeder (dahili pencereler için
+ *   open-internal-window IPC kanalı kullanılır).
+ */
+function attachNavigationGuards(contents: WebContents) {
+    contents.on('will-navigate', (event, url) => {
+        if (!isInternalUrl(url)) {
+            event.preventDefault()
+            if (/^https?:/.test(url)) {
+                shell.openExternal(url)
+            }
+        }
+    })
+
+    contents.setWindowOpenHandler(({ url }) => {
+        if (!isInternalUrl(url) && /^https?:/.test(url)) {
+            shell.openExternal(url)
+        }
+        return { action: 'deny' }
+    })
+}
 
 
 /**
@@ -103,6 +138,15 @@ export function registerNextOP(mainWindow: BrowserWindow | null, options: NextOP
     const allowedCommands = options.shell?.allowedCommands ?? []
     const requireConsent = options.shell?.requireConsent ?? true
 
+    // Ana pencere registerNextOP'tan önce oluşturulduğu için guard'ları doğrudan ona ekle;
+    // sonradan açılan pencereler için web-contents-created event'ini dinle.
+    if (mainWindow) {
+        attachNavigationGuards(mainWindow.webContents)
+    }
+    app.on('web-contents-created', (_event, contents) => {
+        attachNavigationGuards(contents)
+    })
+
     ipcMain.handle("fs:readFile", async (_event, filePath: string) => {
         const safePath = resolveFsPath(filePath, fsMode, allowedRoots)
         return await fs.readFile(safePath, "utf-8")
@@ -117,6 +161,22 @@ export function registerNextOP(mainWindow: BrowserWindow | null, options: NextOP
     ipcMain.on('set-menu', (_event: IpcMainEvent, template: MenuItemConstructorOptions[]) => {
         const menu = Menu.buildFromTemplate(template)
         Menu.setApplicationMenu(menu)
+    })
+
+    // Pencere kontrolleri olayı gönderen pencerede çalışır (çok pencereli senaryolar için doğru).
+    ipcMain.handle("window:minimize", (_event) => {
+        BrowserWindow.fromWebContents(_event.sender)?.minimize()
+    })
+
+    ipcMain.handle("window:maximize", (_event) => {
+        const win = BrowserWindow.fromWebContents(_event.sender)
+        if (win) {
+            win.isMaximized() ? win.unmaximize() : win.maximize()
+        }
+    })
+
+    ipcMain.handle("window:close", (_event) => {
+        BrowserWindow.fromWebContents(_event.sender)?.close()
     })
 
     ipcMain.handle("window:isMaximized", (_event) => {
@@ -245,6 +305,7 @@ export function registerNextOP(mainWindow: BrowserWindow | null, options: NextOP
                 preload: path.join(__dirname, '../preload/index.mjs'),
                 contextIsolation: true,
                 nodeIntegration: false,
+                sandbox: true,
                 ...webPreferences
             }
         })

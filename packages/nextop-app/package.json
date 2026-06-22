@@ -28,15 +28,19 @@
       "require": "./dist/main/index.js"
     },
     "./link": {
-      "types": "./dist/link/index.d.ts", 
+      "types": "./dist/link/index.d.ts",
       "import": "./dist/link/index.js"
+    },
+    "./virtual-list": {
+      "types": "./dist/virtual-list/index.d.ts",
+      "import": "./dist/virtual-list/index.js"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "npx tsc -p tsconfig.build.json"
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && npx tsc -p tsconfig.build.json"
   },
   "dependencies": {
     "concurrently": "^8.2.2",
