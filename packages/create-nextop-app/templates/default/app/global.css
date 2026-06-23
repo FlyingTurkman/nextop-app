@@ -1,15 +1,106 @@
 @import "tailwindcss";
 
+@theme {
+    --color-ink: #0c0c0d;
+    --color-paper: #fafaf9;
+    --color-accent: #ff5722;
 
-
-h1 {
-    @apply scroll-m-20 text-center text-4xl font-extrabold tracking-tight text-balance
+    --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
-h2 {
-    @apply scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0
+:root {
+    color-scheme: dark;
 }
 
-p {
-    @apply text-xl
+html,
+body {
+    background-color: #08080a;
+    color: #f4f4f5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
 }
+
+body {
+    min-height: 100vh;
+}
+
+/* Noise + soft spotlight backdrop */
+.backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(60rem 40rem at 70% -10%, rgba(255, 87, 34, 0.16), transparent 60%),
+        radial-gradient(50rem 40rem at 0% 110%, rgba(99, 102, 241, 0.14), transparent 55%);
+}
+
+.dots {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 22px 22px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black, transparent 80%);
+}
+
+/* Bento tile */
+.tile {
+    position: relative;
+    border-radius: 1.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.025);
+    overflow: hidden;
+    transition: border-color 0.25s ease, background 0.25s ease, transform 0.25s ease;
+}
+
+.tile:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.tile-glow::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(140deg, rgba(255, 87, 34, 0.6), rgba(99, 102, 241, 0.5), transparent 60%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+}
+
+.reveal {
+    opacity: 0;
+    transform: translateY(14px);
+    animation: reveal 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes reveal {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.kbd {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.02em;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-bottom-width: 2px;
+    border-radius: 0.4rem;
+    padding: 0.1rem 0.4rem;
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+@keyframes blink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+}
+.caret { animation: blink 1.1s step-end infinite; }

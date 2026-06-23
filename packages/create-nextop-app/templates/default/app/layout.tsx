@@ -1,12 +1,17 @@
 import { ReactNode } from "react"
 import './global.css'
 import { Metadata } from "next"
+import { Geist, Geist_Mono } from "next/font/google"
 
+const geistSans = Geist({
+    variable: "--font-geist-sans",
+    subsets: ["latin"],
+})
 
-
-
-
-
+const geistMono = Geist_Mono({
+    variable: "--font-geist-mono",
+    subsets: ["latin"],
+})
 
 export const metadata: Metadata = {
     title: 'NextOP',
@@ -14,17 +19,14 @@ export const metadata: Metadata = {
     icons: 'favicon.ico'
 }
 
-
-
 export default function RootLayout({
     children
 }: {
     children: ReactNode
 }) {
-
     return (
-        <html>
-            <body>
+        <html lang="en">
+            <body className={`${geistSans.variable} ${geistMono.variable} font-sans`}>
                 {children}
             </body>
         </html>

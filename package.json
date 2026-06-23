@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "license": "MIT",
-  "private": "true",
+  "private": "false",
   "author": "FlyingTurkman",
   "type": "commonjs",
   "main": "index.js",
