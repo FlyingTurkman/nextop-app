@@ -1,14 +1,21 @@
 'use client'
 
 import Image from 'next/image'
-import { useFs, useWindow, useMenu, useNotification, useShell, useClipboard } from 'nextop-app'
 import Link from 'nextop-app/link'
+import { useFs, useWindow } from 'nextop-app'
+
+
+
 
 
 
 
 
 export default function Page() {
+
+    const { writeFile } = useFs()
+    const { close, maximize, minimize } = useWindow()
+
     return (
         <main
         className='flex flex-col gap-4 items-center justify-center h-screen'
@@ -25,8 +32,51 @@ export default function Page() {
             alt='logo'
             />
             <label>
-                For contrubition <Link className="font-semibold underline" isExternal={true} href={'https://github.com/FlyingTurkman/nextop-app'}>Github</Link>
+                For contrubition <Link className="font-semibold underline" isExternal href={'https://github.com/FlyingTurkman/nextop-app'}>Github</Link>
             </label>
+            <button
+            className='p-2 bg-[#1a1a1a] text-white rounded-md cursor-pointer'
+            onClick={() => {
+                writeFile('nextop.txt', 'This is a text file created by nextop')
+            }}
+            >
+                Create a text file
+            </button>
+            <div
+            className='flex flex-row items-center gap-4'
+            >
+                <button
+                className='p-2 bg-[#1a1a1a] text-white rounded-md cursor-pointer'
+                onClick={() => {
+                    minimize()
+                }}
+                >
+                    Minimize
+                </button>
+                <button
+                className='p-2 bg-[#1a1a1a] text-white rounded-md cursor-pointer'
+                onClick={() => {
+                    maximize()
+                }}
+                >
+                    Maximize
+                </button>
+                <button
+                className='p-2 bg-[#1a1a1a] text-white rounded-md cursor-pointer'
+                onClick={() => {
+                    close()
+                }}
+                >
+                    Close
+                </button>
+                <button
+                onClick={() => {
+
+                }}
+                >
+                    Set Menu
+                </button>
+            </div>
         </main>
     )
 }

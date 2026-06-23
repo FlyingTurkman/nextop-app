@@ -1,6 +1,6 @@
 {
   "name": "nextop-monorepo",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "",
   "license": "MIT",
   "private": "true",
@@ -10,7 +10,7 @@
   "scripts": {
     "build": "npm run build --workspaces",
     "dev": "npm run dev --workspaces",
-    "build-dev": "cd packages & cd create-nextop-app & npm run build & npm link & cd .. & cd nextop-app & npm run build & npm link & cd .. & cd .. & cd test & npm link nextop-app"
+    "build-dev": "node scripts/build-dev.mjs"
   },
   "dependencies": {
     "electron": "^39.2.7",

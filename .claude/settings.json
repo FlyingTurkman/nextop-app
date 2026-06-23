@@ -3,7 +3,17 @@
     "allow": [
       "PowerShell(cd packages\\\\nextop-app; npm run build; Write-Output \"--- dist tree ---\"; Get-ChildItem -Recurse dist -File | ForEach-Object { $_.FullName.Replace\\(\"$PWD\\\\\",\"\"\\) })",
       "PowerShell(npm run build --prefix packages\\\\nextop-app)",
-      "PowerShell(npm run build --prefix packages\\\\create-nextop-app 2>&1)"
+      "PowerShell(npm run build --prefix packages\\\\create-nextop-app 2>&1)",
+      "Bash(node packages/create-nextop-app/dist/index.js test)",
+      "Bash(npm link *)",
+      "PowerShell(Set-Location 'c:\\\\Users\\\\deniz\\\\Desktop\\\\next-desktop\\\\nextop-monorepo\\\\packages\\\\create-nextop-app'; Write-Output \"=== local tsc var mı ===\"; Test-Path node_modules\\\\.bin\\\\tsc.cmd, node_modules\\\\typescript\\\\bin\\\\tsc; Write-Output \"=== node_modules paket sayısı ===\"; \\(Get-ChildItem node_modules -Directory -ErrorAction SilentlyContinue\\).Count)",
+      "PowerShell(Set-Location 'c:\\\\Users\\\\deniz\\\\Desktop\\\\next-desktop\\\\nextop-monorepo\\\\packages\\\\create-nextop-app'; Write-Output \"=== dist'te --link / runLink var mı ===\"; Select-String -Path dist\\\\index.js -Pattern \"runLink|'--link'|link', 'nextop-app'\" | Select-Object -First 5 | ForEach-Object { $_.Line.Trim\\(\\) }; Write-Output \"=== relink ===\"; npm link 2>&1 | Select-Object -Last 2)",
+      "PowerShell(Set-Location 'c:\\\\Users\\\\deniz\\\\Desktop\\\\next-desktop\\\\nextop-monorepo\\\\packages\\\\nextop-app'; Write-Output \"=== dist var mı / içeriği ===\"; if \\(Test-Path dist\\) { Get-ChildItem dist -Name } else { Write-Output \"DIST YOK\" }; Write-Output \"=== typescript kurulu mu ===\"; Test-Path node_modules\\\\typescript\\\\bin\\\\tsc; Write-Output \"=== node_modules paket sayısı ===\"; \\(Get-ChildItem node_modules -Directory -ErrorAction SilentlyContinue\\).Count)",
+      "PowerShell(Set-Location 'c:\\\\Users\\\\deniz\\\\Desktop\\\\next-desktop\\\\nextop-monorepo'; Write-Output \"=== electron süreçleri ===\"; Get-Process electron -ErrorAction SilentlyContinue | Select-Object Id,ProcessName; Write-Output \"=== test/ silme denemesi ===\"; try { Remove-Item -Recurse -Force test -ErrorAction Stop; Write-Output \"test/ silindi\" } catch { Write-Output \"HATA: $\\($_.Exception.Message\\)\" }; Write-Output \"=== test/ var mı ===\"; Test-Path test)",
+      "PowerShell(Get-CimInstance Win32_Process -Filter \"name='node.exe'\" | Select-Object ProcessId, @{n='Cmd';e={$_.CommandLine}} | Format-Table -AutoSize -Wrap | Out-String -Width 200)",
+      "PowerShell(Set-Location 'c:\\\\Users\\\\deniz\\\\Desktop\\\\next-desktop\\\\nextop-monorepo'; Write-Output \"=== Code.exe çalışıyor mu ===\"; \\(Get-Process Code -ErrorAction SilentlyContinue | Measure-Object\\).Count; Write-Output \"=== rename denemesi \\(cmd rmdir önce\\) ===\"; cmd /c \"rmdir /s /q test\" 2>$null; if \\(Test-Path test\\) { try { Rename-Item test \"test._locked_$\\(Get-Random\\)\" -ErrorAction Stop; Write-Output \"RENAME OK \\(engel kalktı\\)\" } catch { Write-Output \"RENAME HATA: $\\($_.Exception.Message\\)\" } } else { Write-Output \"cmd rmdir ile silindi\" }; Write-Output \"=== kök test/ var mı: $\\(Test-Path test\\) ===\")",
+      "Bash(grep -nE '^\\\\$ |siliniyor|kaldırılıyor|Orphan|UYARI|tamamlandı' C:/Users/deniz/AppData/Local/Temp/claude/c--Users-deniz-Desktop-next-desktop-nextop-monorepo/ff70a19c-60c4-4d18-9a86-ab2126f53594/tasks/bzb3hvgii.output)",
+      "Bash(npm run *)"
     ]
   }
 }

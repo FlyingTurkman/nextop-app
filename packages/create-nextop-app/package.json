@@ -2,6 +2,7 @@
   "name": "create-nextop-app",
   "version": "0.0.8",
   "description": "NextOP framework starter CLI",
+  "license": "MIT",
   "main": "./dist/index.js",
   "bin": {
     "create-nextop-app": "./dist/index.js"
@@ -16,7 +17,7 @@
     "directory": "packages/create-nextop-app"
   },
   "scripts": {
-    "build": "npx tsc",
+    "build": "tsc",
     "start": "node dist/index.js"
   },
   "dependencies": {

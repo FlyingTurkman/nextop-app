@@ -1,7 +1,8 @@
 {
   "name": "nextop-app",
-  "version": "0.0.4",
+  "version": "1.0.0",
   "description": "",
+  "license": "MIT",
   "main": "./dist/index.js",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -40,7 +41,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && npx tsc -p tsconfig.build.json"
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json"
   },
   "dependencies": {
     "concurrently": "^8.2.2",

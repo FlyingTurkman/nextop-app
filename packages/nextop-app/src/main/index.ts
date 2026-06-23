@@ -1,5 +1,5 @@
 import { spawn } from "child_process"
-import { app, ipcMain, BrowserWindow, Menu, IpcMainEvent, MenuItemConstructorOptions, shell, Notification, clipboard, BrowserWindowConstructorOptions, dialog, WebContents } from "electron"
+import { app, ipcMain, BrowserWindow, Menu, IpcMainEvent, MenuItemConstructorOptions, shell, Notification, clipboard, BrowserWindowConstructorOptions, dialog, WebContents, safeStorage } from "electron"
 import fs from 'fs/promises'
 import path from "path"
 import { fileURLToPath } from "url"
@@ -41,6 +41,20 @@ function attachNavigationGuards(contents: WebContents) {
         }
         return { action: 'deny' }
     })
+}
+
+
+/** Secure store: şifreli kayıtları tek bir JSON dosyasında tutar ({ [key]: base64(encryptedBlob) }). */
+async function readSecureStore(storeFile: string): Promise<Record<string, string>> {
+    try {
+        return JSON.parse(await fs.readFile(storeFile, "utf-8"))
+    } catch {
+        return {}
+    }
+}
+
+async function writeSecureStore(storeFile: string, data: Record<string, string>): Promise<void> {
+    await fs.writeFile(storeFile, JSON.stringify(data), "utf-8")
 }
 
 
@@ -289,6 +303,48 @@ export function registerNextOP(mainWindow: BrowserWindow | null, options: NextOP
 
     ipcMain.handle('read-clipboard', (_event, selection?: 'selection' | 'clipboard') => {
         return clipboard.readText(selection ?? 'clipboard')
+    })
+
+    // Secure store (useSecureStore): hassas değerleri safeStorage ile OS keychain'de şifreli saklar.
+    const secureStoreFile = path.join(app.getPath("userData"), "nextop-secure-store.json")
+
+    ipcMain.handle('secure-store:isAvailable', () => safeStorage.isEncryptionAvailable())
+
+    ipcMain.handle('secure-store:set', async (_event, key: string, value: string) => {
+        // Şifreleme yoksa (ör. Linux'ta keyring yok) düz yazma yapma; açıkça reddet.
+        if (!safeStorage.isEncryptionAvailable()) {
+            throw new Error('NextOP: safeStorage bu platformda kullanılamıyor; secret yazılmadı.')
+        }
+        const store = await readSecureStore(secureStoreFile)
+        store[key] = safeStorage.encryptString(value).toString('base64')
+        await writeSecureStore(secureStoreFile, store)
+        return true
+    })
+
+    ipcMain.handle('secure-store:get', async (_event, key: string) => {
+        const store = await readSecureStore(secureStoreFile)
+        const blob = store[key]
+        if (!blob) {
+            return null
+        }
+        return safeStorage.decryptString(Buffer.from(blob, 'base64'))
+    })
+
+    ipcMain.handle('secure-store:remove', async (_event, key: string) => {
+        const store = await readSecureStore(secureStoreFile)
+        delete store[key]
+        await writeSecureStore(secureStoreFile, store)
+        return true
+    })
+
+    ipcMain.handle('secure-store:has', async (_event, key: string) => {
+        const store = await readSecureStore(secureStoreFile)
+        return Object.prototype.hasOwnProperty.call(store, key)
+    })
+
+    ipcMain.handle('secure-store:clear', async () => {
+        await writeSecureStore(secureStoreFile, {})
+        return true
     })
 
     ipcMain.on('open-internal-window', (_event, url: string, options?: BrowserWindowConstructorOptions) => {

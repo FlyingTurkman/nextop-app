@@ -46,7 +46,7 @@ Renderer ↔ main communication:
 
 ### Key Files
 - `packages/nextop-app/src/main/index.ts` — main-process IPC handlers (fs, shell, clipboard, notification, menu, window) and the security configuration (`NextOPOptions`).
-- `packages/nextop-app/src/hooks/*` — renderer hooks: `useFs`, `useWindow`, `useMenu`, `useShell`, `useNotification`, `useClipboard`.
+- `packages/nextop-app/src/hooks/*` — renderer hooks: `useFs`, `useWindow`, `useMenu`, `useShell`, `useNotification`, `useClipboard`, `useSecureStore` (safeStorage-encrypted secret storage).
 - `packages/nextop-app/src/link/index.tsx` — `<Link>` component that opens external / internal windows.
 - `packages/nextop-app/index.d.ts` — global `window.desktop` typing.
 - `packages/nextop-app/bin/cli.js` — the `nextop dev` command (tsc compile → copy assets → launch Electron).
@@ -79,7 +79,16 @@ dev (`dev=true`, `dir=cwd`) and production (`dev=false`, `dir=app.getAppPath()`)
 automatically. `next.config.mjs` lives at the **project root** (not `app/`) and sets
 `images.unoptimized` (read-only package can't write the optimization cache).
 NOTE: the packaging step downloads platform binaries and is not verified in CI — validate `nextop
-build` in a real scaffolded app.
+build` in a real scaffolded app. Validated so far: `next build` + Electron compile + electron
+download + native rebuild succeed. On Windows, electron-builder's winCodeSign extraction needs
+symlink privilege → enable **Developer Mode** or run the terminal as **Administrator** (not a code
+bug).
+
+### Local development linking
+Both packages are dev-linked via `npm link` (global). To scaffold a test app that uses the **local**
+`nextop-app` (not the registry version), run `create-nextop-app <name> --link` — the `--link` flag
+runs `npm link nextop-app` after install (best-effort; silently skips if not globally linked, so it's
+safe for published end users). The repo's `test/` app is created this way.
 
 ## Security Model
 

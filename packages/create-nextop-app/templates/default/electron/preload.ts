@@ -11,7 +11,13 @@ const INVOKE_CHANNELS = [
   "fs:readFile",
   "fs:writeFile",
   "shell-execute",
-  "read-clipboard"
+  "read-clipboard",
+  "secure-store:isAvailable",
+  "secure-store:set",
+  "secure-store:get",
+  "secure-store:remove",
+  "secure-store:has",
+  "secure-store:clear"
 ]
 
 const SEND_CHANNELS = [
