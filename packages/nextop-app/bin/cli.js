@@ -3,7 +3,7 @@
 import { spawn, execSync } from 'child_process'
 
 
-/** Electron katmanını derler (tsc) ve asset'leri dist'e kopyalar. dev ve build ortak adımı. */
+/** Compiles the Electron layer (tsc) and copies assets to dist. Shared step for dev and build. */
 function compileElectron(root) {
   console.log("Compiling Electron (tsc)...")
   execSync('npx tsc -p tsconfig.json', { cwd: root, stdio: 'inherit' })
@@ -60,10 +60,10 @@ async function run() {
     console.log('NextOP production build starting...')
 
     try {
-      // 1) Electron main/preload derle + asset'leri kopyala.
+      // 1) Compile Electron main/preload + copy assets.
       compileElectron(root)
 
-      // 2) Next.js'i production için derle (paketli uygulama bunu dev:false ile çalıştırır).
+      // 2) Build Next.js for production (the packaged app runs this with dev:false).
       console.log("Building Next.js (next build)...")
       execSync('npx next build', {
         cwd: root,
@@ -71,7 +71,7 @@ async function run() {
         env: { ...process.env, NODE_ENV: 'production' }
       })
 
-      // 3) electron-builder ile dağıtılabilir paket üret.
+      // 3) Produce a distributable package with electron-builder.
       console.log("Packaging with electron-builder...")
       execSync('npx electron-builder', { cwd: root, stdio: 'inherit' })
 

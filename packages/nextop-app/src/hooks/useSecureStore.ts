@@ -2,11 +2,11 @@ import { useCallback } from "react"
 
 
 /**
- * Token/secret gibi hassas değerleri OS anahtar deposunda (safeStorage) şifreli saklar.
- * - Düz metin yazmaz; değerler Electron'un safeStorage'ı ile şifrelenir.
- * - "Merkezi DB master credential'ı gömme" sorununu çözmez (o evrensel olarak çözülemez);
- *   çözdüğü şey per-user token / yerel secret'ı diskte (at-rest) korumaktır.
- * - window.desktop yoksa (web) zarifçe no-op döner.
+ * Stores sensitive values like tokens/secrets encrypted in the OS keychain (safeStorage).
+ * - Never writes plaintext; values are encrypted with Electron's safeStorage.
+ * - Does not solve "embedding a central DB master credential" (that is unsolvable in general);
+ *   what it solves is protecting per-user tokens / local secrets at rest on disk.
+ * - Gracefully no-ops when window.desktop is absent (web).
  */
 export function useSecureStore() {
 

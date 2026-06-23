@@ -14,9 +14,9 @@ let nextServer: NextServerHandleType | null = null
 
 app.whenReady().then(async () => {
 
-    // Pencereyi gizli (show:false) ve hemen oluştur: webContents/preload init'i, Next sunucusu
-    // hazırlanırken paralel çalışır. İçerik hazır olunca (ready-to-show) gösterilir → beyaz ekran
-    // (flash) olmaz. backgroundColor ilk boyamada beyaz yerine tema rengini verir.
+    // Create the window hidden (show:false) and immediately: webContents/preload init runs in
+    // parallel while the Next server prepares. It is shown once content is ready (ready-to-show)
+    // → no white flash. backgroundColor paints the theme color instead of white on first paint.
     mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
@@ -37,27 +37,27 @@ app.whenReady().then(async () => {
         mainWindow?.show()
     })
 
-    // NextOP güvenlik yapılandırması.
-    // - fs.allowedRoots: useFs yalnızca bu dizinlerin içine erişebilir (path traversal korumalı).
-    // - shell.allowedCommands: useShell yalnızca burada listelenen komutları çalıştırabilir.
-    //   Liste boş bırakılırsa shell tamamen devre dışıdır (güvenli varsayılan).
+    // NextOP security configuration.
+    // - fs.allowedRoots: useFs can only access inside these directories (path-traversal protected).
+    // - shell.allowedCommands: useShell can only run the commands listed here.
+    //   If the list is left empty, shell is fully disabled (secure default).
     registerNextOP(mainWindow, {
         fs: {
-            // 'all' = kısıtsız | 'allowed' = yalnızca allowedRoots | 'none' = kapalı
+            // 'all' = unrestricted | 'allowed' = only allowedRoots | 'none' = disabled
             mode: "allowed",
             allowedRoots: [app.getPath("userData")]
         },
         shell: {
-            // 'all' = her komut | 'allowed' = yalnızca allowedCommands | 'none' = kapalı
+            // 'all' = any command | 'allowed' = only allowedCommands | 'none' = disabled
             mode: "none",
-            allowedCommands: [], // mode "allowed" iken kullanılır, ör. ["git", "node"]
+            allowedCommands: [], // used when mode is "allowed", e.g. ["git", "node"]
             requireConsent: true
         }
     })
 
-    // Dev: kaynak dizininden (cwd) Next dev sunucusu. Production: paketlenmiş app dizininden
-    // (app.getAppPath) derlenmiş .next ile dev:false sunucu.
-    // Port, startNextServer içinde seçilir: 3000 doluysa OS boş bir port atar.
+    // Dev: Next dev server from the source directory (cwd). Production: dev:false server from the
+    // packaged app directory (app.getAppPath) using the prebuilt .next output.
+    // The port is chosen inside startNextServer: if 3000 is taken, the OS assigns a free port.
     const dev = !app.isPackaged
     nextServer = await startNextServer(
         dev ? process.cwd() : app.getAppPath(),

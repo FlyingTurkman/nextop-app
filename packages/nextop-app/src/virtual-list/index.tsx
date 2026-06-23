@@ -7,9 +7,9 @@ type VirtualListProps = HTMLAttributes<HTMLDivElement> & {
 }
 
 /**
- * Görünür olmayan çocukları render etmeyen basit bir sanal liste.
- * IntersectionObserver ile viewport'a giren/çıkan öğeleri izler; görünür değilken
- * öğe yerine küçük bir yer tutucu (minHeight) bırakır.
+ * A simple virtual list that does not render off-screen children.
+ * Tracks elements entering/leaving the viewport with IntersectionObserver; while not visible,
+ * it leaves a small placeholder (minHeight) instead of the element.
  */
 export default function VirtualList({ children, ...props }: VirtualListProps) {
     const [visibleElements, setVisibleElements] = useState<Set<number>>(new Set())

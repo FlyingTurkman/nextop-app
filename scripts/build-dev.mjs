@@ -1,6 +1,6 @@
-// Geliştirme bootstrap'ı: iki paketi kurar + derler + global'e linkler, mevcut test/'i siler,
-// sonra create-nextop-app ile yerel nextop-app'e linkli "test" app'i oluşturur.
-// Çalıştırma: npm run build-dev
+// Development bootstrap: installs + builds + globally links both packages, removes the existing
+// test/, then creates a "test" app via create-nextop-app linked to the local nextop-app.
+// Run: npm run build-dev
 import { execSync } from 'node:child_process'
 import { rmSync, existsSync, renameSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -14,9 +14,9 @@ function run(cmd, cwd = root) {
   execSync(cmd, { cwd, stdio: 'inherit', shell: true })
 }
 
-// Bir klasörü dayanıklı biçimde siler. Windows'ta bir editör/süreç native modülü
-// (ör. VS Code Tailwind eklentisi @tailwindcss/oxide'ı) kilitleyebilir; bu durumda
-// silmek yerine kenara taşıyıp (rename) devam eder — kilit kalkınca temizlenir.
+// Removes a directory resiliently. On Windows an editor/process may lock a native module
+// (e.g. the VS Code Tailwind extension locks @tailwindcss/oxide); in that case it moves the
+// directory aside (rename) instead of deleting and continues — it gets cleaned up once unlocked.
 function removeDirResilient(dir) {
   if (!existsSync(dir)) return
   try {
@@ -24,44 +24,44 @@ function removeDirResilient(dir) {
   } catch {
     const aside = `${dir}.old-${Date.now()}`
     renameSync(dir, aside)
-    console.warn(`UYARI: "${path.basename(dir)}" silinemedi (bir süreç kilitliyor — VS Code Tailwind eklentisi?). "${path.basename(aside)}" olarak taşındı; editörü kapatınca silebilirsin.`)
+    console.warn(`WARNING: could not delete "${path.basename(dir)}" (a process is locking it — VS Code Tailwind extension?). Moved to "${path.basename(aside)}"; you can delete it after closing the editor.`)
   }
 }
 
-// Önceki çalıştırmalardan kalan kilitli "test.old-*" / "test._locked_*" orphan'larını best-effort temizle.
+// Best-effort cleanup of locked "test.old-*" / "test._locked_*" orphans left from previous runs.
 function cleanOrphans() {
   for (const entry of readdirSync(root)) {
     if (/^test\.(old-|_locked_)/.test(entry)) {
       try {
         rmSync(path.join(root, entry), { recursive: true, force: true, maxRetries: 3, retryDelay: 200 })
-        console.log(`Orphan temizlendi: ${entry}`)
+        console.log(`Orphan cleaned: ${entry}`)
       } catch {
-        // hâlâ kilitli — sonraki çalıştırmada dene
+        // still locked — try on the next run
       }
     }
   }
 }
 
-// 1) create-nextop-app: kur + derle + linkle
+// 1) create-nextop-app: install + build + link
 run('npm install', pkg('create-nextop-app'))
 run('npm run build', pkg('create-nextop-app'))
 run('npm link', pkg('create-nextop-app'))
 
-// 2) nextop-app: kur + derle + linkle (test --link bunun global linkini gerektirir)
+// 2) nextop-app: install + build + link (test --link requires this global link)
 run('npm install', pkg('nextop-app'))
 run('npm run build', pkg('nextop-app'))
 run('npm link', pkg('nextop-app'))
 
-// 3) mevcut test/ varsa sil (+ eski orphan'ları temizle)
+// 3) remove the existing test/ if present (+ clean up old orphans)
 cleanOrphans()
 const testDir = path.join(root, 'test')
 if (existsSync(testDir)) {
-  console.log('\nMevcut test/ kaldırılıyor...')
+  console.log('\nRemoving existing test/...')
   removeDirResilient(testDir)
 }
 
-// 4) test app'i oluştur + yerel nextop-app'i linkle (--link)
+// 4) create the test app + link the local nextop-app (--link)
 const cli = path.join(pkg('create-nextop-app'), 'dist', 'index.js')
 run(`node "${cli}" test --link`, root)
 
-console.log('\n✓ build-dev tamamlandı: paketler kuruldu/linklendi, "test" app oluşturuldu (yerel nextop-app linkli).')
+console.log('\n✓ build-dev complete: packages installed/linked, "test" app created (linked to local nextop-app).')

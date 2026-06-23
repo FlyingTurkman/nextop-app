@@ -1,8 +1,8 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent, MenuItemConstructorOptions } from "electron"
 
-// Renderer'ın erişebileceği IPC kanalları (allowlist). Bu listelerde olmayan hiçbir kanal geçmez.
-// Kendi kanallarını eklemek için "app:" önekini kullan (ör. ipcRenderer.invoke("app:my-channel")).
-// Framework kanalları bu önekte değildir; böylece kullanıcı kanalları çakışmaz ve genişletme açıktır.
+// IPC channels the renderer may access (allowlist). Any channel not in these lists is blocked.
+// To add your own channels, use the "app:" prefix (e.g. ipcRenderer.invoke("app:my-channel")).
+// Framework channels do not use this prefix, so user channels never collide and stay extensible.
 const INVOKE_CHANNELS = [
   "window:minimize",
   "window:maximize",
@@ -28,8 +28,8 @@ const SEND_CHANNELS = [
   "open-internal-window"
 ]
 
-// Main → renderer dinlenebilecek kanallar. Framework şu an hiçbirini kullanmıyor;
-// kullanıcılar "app:" önekiyle kendi kanallarını dinleyebilir.
+// Channels that can be listened to (main → renderer). The framework uses none right now;
+// users can listen to their own channels with the "app:" prefix.
 const RECEIVE_CHANNELS: string[] = []
 
 const USER_CHANNEL_PREFIX = "app:"
@@ -55,24 +55,24 @@ contextBridge.exposeInMainWorld("desktop", {
   ipcRenderer: {
     send: (channel: string, ...data: any[]) => {
       if (!isAllowed(channel, SEND_CHANNELS)) {
-        console.error(`NextOP: "${channel}" izinli bir send kanalı değil.`)
+        console.error(`NextOP: "${channel}" is not an allowed send channel.`)
         return
       }
       ipcRenderer.send(channel, ...data)
     },
     on: (channel: string, func: (...args: any[]) => void) => {
       if (!isAllowed(channel, RECEIVE_CHANNELS)) {
-        console.error(`NextOP: "${channel}" izinli bir dinleme (on) kanalı değil.`)
+        console.error(`NextOP: "${channel}" is not an allowed listen (on) channel.`)
         return () => {}
       }
       const listener = (_event: IpcRendererEvent, ...args: any[]) => func(...args)
       ipcRenderer.on(channel, listener)
-      // Temizlik için abonelikten çıkma fonksiyonu döndür (listener sızıntısını önler).
+      // Return an unsubscribe function for cleanup (prevents listener leaks).
       return () => ipcRenderer.removeListener(channel, listener)
     },
     invoke: (channel: string, ...args: any[]) => {
       if (!isAllowed(channel, INVOKE_CHANNELS)) {
-        return Promise.reject(new Error(`NextOP: "${channel}" izinli bir invoke kanalı değil.`))
+        return Promise.reject(new Error(`NextOP: "${channel}" is not an allowed invoke channel.`))
       }
       return ipcRenderer.invoke(channel, ...args)
     }

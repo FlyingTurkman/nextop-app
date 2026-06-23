@@ -27,8 +27,8 @@ export async function startNextServer(
         handler(req, res)
     })
 
-    // Önce tercih edilen portu dene; doluysa (EADDRINUSE) OS'tan boş bir port iste (port 0).
-    // Sunucunun kendisi portu bağladığı için ayrı port-bulma adımıyla oluşan race-condition yoktur.
+    // Try the preferred port first; if taken (EADDRINUSE), ask the OS for a free port (port 0).
+    // Since the server binds the port itself, there is no race condition from a separate port-finding step.
     const port = await new Promise<number>((resolve, reject) => {
         const tryListen = (candidate: number, isRetry: boolean) => {
             const onError = (error: NodeJS.ErrnoException) => {
@@ -41,7 +41,7 @@ export async function startNextServer(
             }
 
             server.once('error', onError)
-            // Yalnızca 127.0.0.1'e bind et: sunucu LAN'a açılmasın, sadece bu makineden erişilsin.
+            // Bind to 127.0.0.1 only: the server is not exposed to the LAN, reachable only from this machine.
             server.listen(candidate, '127.0.0.1', () => {
                 server.removeListener('error', onError)
                 const address = server.address()

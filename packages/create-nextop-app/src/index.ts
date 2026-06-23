@@ -26,14 +26,14 @@ function runInstall(projectPath: string) {
 
     child.on('close', (code) => {
       if (code === 0) resolve(true)
-      else reject(new Error('Bağımlılıklar yüklenirken bir hata oluştu.'))
+      else reject(new Error('An error occurred while installing dependencies.'))
     })
   })
 }
 
 
-// Yerel olarak (npm link) global'e bağlanmış nextop-app'i projeye bağlar.
-// Best-effort: global link yoksa hata fırlatmaz, registry sürümü kullanılmaya devam eder.
+// Links the locally (npm link) globally-linked nextop-app into the project.
+// Best-effort: does not throw if no global link exists; the registry version keeps being used.
 function runLink(projectPath: string): Promise<boolean> {
     return new Promise((resolve) => {
     const child = spawn('npm', ['link', 'nextop-app'], {
@@ -52,7 +52,7 @@ program
   .name('create-nextop-app')
   .description('Create a new NextOP app')
   .argument('[project-directory]', 'Project directory')
-  .option('--link', 'Yerel (npm link ile global\'e bağlı) nextop-app\'i kullan — NextOP geliştirme içindir')
+  .option('--link', 'Use the local (npm-link, globally-linked) nextop-app — intended for NextOP development')
   .action(async (projectDir: string, options: { link?: boolean }) => {
     let targetDir = projectDir
 
@@ -93,21 +93,22 @@ program
             await fs.writeJson(packPath, pack, { spaces: 2 })
         }
 
-        // --link: install'dan ÖNCE linkle. Böylece node_modules/nextop-app yerel sürüme symlink
-        // olur ve npm install onu registry'den çekmeye çalışmaz (yerel sürüm yayınlanmamış olsa bile).
+        // --link: link BEFORE install. This way node_modules/nextop-app becomes a symlink to the
+        // local version and npm install won't try to fetch it from the registry (even if the local
+        // version is unpublished).
         if (options.link) {
-            console.log(chalk.cyan('\n Linking local nextop-app (install öncesi)...'))
+            console.log(chalk.cyan('\n Linking local nextop-app (before install)...'))
             const linked = await runLink(targetPath)
             console.log(linked
                 ? chalk.green(' Linked local nextop-app (npm link).')
-                : chalk.yellow(' Could not link nextop-app — global link yok mu? Install registry sürümünü deneyecek.'))
+                : chalk.yellow(' Could not link nextop-app — is there no global link? Install will try the registry version.'))
         }
 
         console.log(chalk.cyan('\n Installing...'))
         await runInstall(targetPath)
 
-        console.log(chalk.green(`\n Project created succesfully.`))
-        console.log(`\nBaşlamak için:\n  cd ${targetDir} \n  npm run dev\n`)
+        console.log(chalk.green(`\n Project created successfully.`))
+        console.log(`\nTo get started:\n  cd ${targetDir} \n  npm run dev\n`)
 
     } catch (error) {
         console.error(chalk.red(`\n Error ${error}`))

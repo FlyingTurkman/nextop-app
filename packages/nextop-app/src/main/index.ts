@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 
-/** URL uygulamanın kendi origin'i mi? (Next sunucusu her zaman localhost/127.0.0.1.) */
+/** Is the URL the app's own origin? (The Next server is always localhost/127.0.0.1.) */
 function isInternalUrl(url: string): boolean {
     try {
         const { hostname } = new URL(url)
@@ -20,10 +20,10 @@ function isInternalUrl(url: string): boolean {
 }
 
 /**
- * Navigasyon guard'ları: XSS sonrası yönlendirme/popup saldırılarına karşı.
- * - Uygulama origin'i dışına gezinmeyi engeller; harici http(s) linkleri sistem tarayıcısında açar.
- * - window.open / target=_blank kaynaklı tüm popup'ları reddeder (dahili pencereler için
- *   open-internal-window IPC kanalı kullanılır).
+ * Navigation guards: protect against post-XSS redirect/popup attacks.
+ * - Blocks navigation outside the app origin; external http(s) links open in the system browser.
+ * - Denies all popups from window.open / target=_blank (internal windows use the
+ *   open-internal-window IPC channel instead).
  */
 function attachNavigationGuards(contents: WebContents) {
     contents.on('will-navigate', (event, url) => {
@@ -44,7 +44,7 @@ function attachNavigationGuards(contents: WebContents) {
 }
 
 
-/** Secure store: şifreli kayıtları tek bir JSON dosyasında tutar ({ [key]: base64(encryptedBlob) }). */
+/** Secure store: keeps encrypted entries in a single JSON file ({ [key]: base64(encryptedBlob) }). */
 async function readSecureStore(storeFile: string): Promise<Record<string, string>> {
     try {
         return JSON.parse(await fs.readFile(storeFile, "utf-8"))
@@ -59,41 +59,41 @@ async function writeSecureStore(storeFile: string, data: Record<string, string>)
 
 
 /**
- * `useShell` erişim modu:
- * - 'all'     → her çalıştırılabilire izin verilir. (Yine de spawn + shell:false kullanıldığı için
- *               shell injection mümkün değildir; ama keyfi program çalıştırma riski vardır.)
- * - 'allowed' → yalnızca `allowedCommands` içindeki çalıştırılabilirler çalışır.
- * - 'none'    → shell tamamen kapalı.
+ * `useShell` access mode:
+ * - 'all'     → any executable is allowed. (Still uses spawn + shell:false, so shell injection is
+ *               impossible; but there is a risk of running arbitrary programs.)
+ * - 'allowed' → only the executables in `allowedCommands` may run.
+ * - 'none'    → shell is fully disabled.
  */
 export type ShellAccessMode = 'all' | 'allowed' | 'none'
 
 /**
- * `useShell` (shell-execute) güvenlik yapılandırması.
+ * `useShell` (shell-execute) security configuration.
  */
 export type ShellOptions = {
-    /** Erişim modu. Varsayılan: 'none' (güvenli varsayılan). */
+    /** Access mode. Default: 'none' (secure default). */
     mode?: ShellAccessMode
-    /** mode === 'allowed' iken çalıştırılmasına izin verilen çalıştırılabilir adları (ör. ['git', 'node']). */
+    /** Executable names allowed to run when mode === 'allowed' (e.g. ['git', 'node']). */
     allowedCommands?: string[]
-    /** Her komut öncesi kullanıcı onay diyaloğu. Varsayılan: true (güvenlik önceliği). */
+    /** Show a user confirmation dialog before each command. Default: true (security priority). */
     requireConsent?: boolean
 }
 
 /**
- * `useFs` erişim modu:
- * - 'all'     → kısıtsız: her yere erişim (yalnızca güvenilir uygulamalarda kullanın).
- * - 'allowed' → yalnızca `allowedRoots` içindeki dizinlere erişim (path traversal korumalı).
- * - 'none'    → dosya sistemi erişimi tamamen kapalı.
+ * `useFs` access mode:
+ * - 'all'     → unrestricted: access anywhere (use only in trusted apps).
+ * - 'allowed' → access only within `allowedRoots` (path-traversal protected).
+ * - 'none'    → file-system access is fully disabled.
  */
 export type FsAccessMode = 'all' | 'allowed' | 'none'
 
 /**
- * `useFs` (fs:readFile / fs:writeFile) güvenlik yapılandırması.
+ * `useFs` (fs:readFile / fs:writeFile) security configuration.
  */
 export type FsOptions = {
-    /** Erişim modu. Varsayılan: 'allowed'. */
+    /** Access mode. Default: 'allowed'. */
     mode?: FsAccessMode
-    /** mode === 'allowed' iken erişime izin verilen mutlak kök dizinler. */
+    /** Absolute root directories access is allowed within when mode === 'allowed'. */
     allowedRoots?: string[]
 }
 
@@ -103,21 +103,21 @@ export type NextOPOptions = {
 }
 
 
-/** target, root dizininin içinde mi? (path traversal'a karşı güvenli kontrol) */
+/** Is `target` inside the `root` directory? (path-traversal-safe check) */
 function isInsideRoot(target: string, root: string): boolean {
     const rel = path.relative(root, target)
     return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel))
 }
 
 /**
- * İstenen yolu izinli kökler içine güvenli biçimde çözümler.
- * - Göreli yollar ilk izinli köke göre çözümlenir.
- * - Mutlak yollar olduğu gibi çözümlenir.
- * İzinli köklerin hiçbirinin içinde değilse hata fırlatır.
+ * Safely resolves the requested path within the allowed roots.
+ * - Relative paths are resolved against the first allowed root.
+ * - Absolute paths are resolved as-is.
+ * Throws if the path is not inside any of the allowed roots.
  */
 function resolveSafePath(filePath: string, roots: string[]): string {
     if (roots.length === 0) {
-        throw new Error('NextOP: Dosya sistemi erişimi yapılandırılmadı (fs.allowedRoots boş).')
+        throw new Error('NextOP: File-system access is not configured (fs.allowedRoots is empty).')
     }
 
     const base = roots[0]
@@ -126,16 +126,16 @@ function resolveSafePath(filePath: string, roots: string[]): string {
         : path.resolve(base, filePath)
 
     if (!roots.some((root) => isInsideRoot(resolved, root))) {
-        throw new Error(`NextOP: Erişim reddedildi — "${filePath}" izinli dizinlerin dışında.`)
+        throw new Error(`NextOP: Access denied — "${filePath}" is outside the allowed directories.`)
     }
 
     return resolved
 }
 
-/** Erişim moduna göre istenen yolu çözümler; izin yoksa hata fırlatır. */
+/** Resolves the requested path according to the access mode; throws if not permitted. */
 function resolveFsPath(filePath: string, mode: FsAccessMode, roots: string[]): string {
     if (mode === 'none') {
-        throw new Error('NextOP: Dosya sistemi erişimi kapalı (fs.mode = "none").')
+        throw new Error('NextOP: File-system access is disabled (fs.mode = "none").')
     }
     if (mode === 'all') {
         return path.resolve(filePath)
@@ -152,8 +152,8 @@ export function registerNextOP(mainWindow: BrowserWindow | null, options: NextOP
     const allowedCommands = options.shell?.allowedCommands ?? []
     const requireConsent = options.shell?.requireConsent ?? true
 
-    // Ana pencere registerNextOP'tan önce oluşturulduğu için guard'ları doğrudan ona ekle;
-    // sonradan açılan pencereler için web-contents-created event'ini dinle.
+    // The main window is created before registerNextOP, so attach guards to it directly;
+    // for windows opened later, listen to the web-contents-created event.
     if (mainWindow) {
         attachNavigationGuards(mainWindow.webContents)
     }
@@ -177,7 +177,7 @@ export function registerNextOP(mainWindow: BrowserWindow | null, options: NextOP
         Menu.setApplicationMenu(menu)
     })
 
-    // Pencere kontrolleri olayı gönderen pencerede çalışır (çok pencereli senaryolar için doğru).
+    // Window controls run on the window that sent the event (correct for multi-window scenarios).
     ipcMain.handle("window:minimize", (_event) => {
         BrowserWindow.fromWebContents(_event.sender)?.minimize()
     })
@@ -208,7 +208,7 @@ export function registerNextOP(mainWindow: BrowserWindow | null, options: NextOP
     ipcMain.on('show-notification', (_event, options: { title: string, body: string }) => {
 
         if (!Notification.isSupported()) {
-            console.log('Operation system is not supporting notification system.')
+            console.log('Operating system does not support the notification system.')
             return
         }
         const notification = new Notification({
@@ -236,44 +236,44 @@ export function registerNextOP(mainWindow: BrowserWindow | null, options: NextOP
         const args = Array.isArray(payload?.args) ? payload.args : []
 
         if (shellMode === 'none') {
-            return { success: false, stdout: '', stderr: '', error: 'NextOP: Shell erişimi kapalı (shell.mode = "none").' }
+            return { success: false, stdout: '', stderr: '', error: 'NextOP: Shell access is disabled (shell.mode = "none").' }
         }
 
         if (typeof command !== 'string' || command.length === 0) {
-            return { success: false, stdout: '', stderr: '', error: 'NextOP: Geçersiz komut.' }
+            return { success: false, stdout: '', stderr: '', error: 'NextOP: Invalid command.' }
         }
 
-        // 'allowed' modunda whitelist kontrolü: yalnızca açıkça izin verilen çalıştırılabilirler çalışır.
-        // 'all' modunda bu kontrol atlanır (yine de spawn + shell:false ile injection engellidir).
+        // Whitelist check in 'allowed' mode: only explicitly allowed executables may run.
+        // In 'all' mode this check is skipped (injection is still prevented via spawn + shell:false).
         if (shellMode === 'allowed' && !allowedCommands.includes(command)) {
             return {
                 success: false,
                 stdout: '',
                 stderr: '',
-                error: `NextOP: "${command}" izinli komutlar listesinde değil.`
+                error: `NextOP: "${command}" is not in the list of allowed commands.`
             }
         }
 
-        // Opsiyonel kullanıcı onayı.
+        // Optional user consent.
         if (requireConsent) {
             const win = BrowserWindow.fromWebContents(_event.sender) ?? mainWindow ?? undefined
             const fullCommand = [command, ...args].join(' ')
             const { response } = await dialog.showMessageBox(win!, {
                 type: 'question',
-                buttons: ['İzin Ver', 'Reddet'],
+                buttons: ['Allow', 'Deny'],
                 defaultId: 1,
                 cancelId: 1,
-                title: 'Komut çalıştırma onayı',
-                message: 'Uygulama bir sistem komutu çalıştırmak istiyor:',
+                title: 'Command execution consent',
+                message: 'The app wants to run a system command:',
                 detail: fullCommand
             })
 
             if (response !== 0) {
-                return { success: false, stdout: '', stderr: '', error: 'NextOP: Kullanıcı komutu reddetti.' }
+                return { success: false, stdout: '', stderr: '', error: 'NextOP: The user denied the command.' }
             }
         }
 
-        // spawn + shell:false → argümanlar shell tarafından yorumlanmaz (injection engellenir).
+        // spawn + shell:false → arguments are not interpreted by a shell (injection is prevented).
         return new Promise((resolve) => {
             const child = spawn(command, args, { shell: false })
             let stdout = ''
@@ -291,7 +291,7 @@ export function registerNextOP(mainWindow: BrowserWindow | null, options: NextOP
                     success: code === 0,
                     stdout: stdout.trim(),
                     stderr: stderr.trim(),
-                    error: code === 0 ? null : `NextOP: Komut ${code} koduyla sonlandı.`
+                    error: code === 0 ? null : `NextOP: Command exited with code ${code}.`
                 })
             })
         })
@@ -305,15 +305,15 @@ export function registerNextOP(mainWindow: BrowserWindow | null, options: NextOP
         return clipboard.readText(selection ?? 'clipboard')
     })
 
-    // Secure store (useSecureStore): hassas değerleri safeStorage ile OS keychain'de şifreli saklar.
+    // Secure store (useSecureStore): stores sensitive values encrypted in the OS keychain via safeStorage.
     const secureStoreFile = path.join(app.getPath("userData"), "nextop-secure-store.json")
 
     ipcMain.handle('secure-store:isAvailable', () => safeStorage.isEncryptionAvailable())
 
     ipcMain.handle('secure-store:set', async (_event, key: string, value: string) => {
-        // Şifreleme yoksa (ör. Linux'ta keyring yok) düz yazma yapma; açıkça reddet.
+        // If encryption is unavailable (e.g. no keyring on Linux), do not write plaintext; reject explicitly.
         if (!safeStorage.isEncryptionAvailable()) {
-            throw new Error('NextOP: safeStorage bu platformda kullanılamıyor; secret yazılmadı.')
+            throw new Error('NextOP: safeStorage is unavailable on this platform; the secret was not written.')
         }
         const store = await readSecureStore(secureStoreFile)
         store[key] = safeStorage.encryptString(value).toString('base64')

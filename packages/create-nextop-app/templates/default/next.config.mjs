@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // Masaüstü paketi read-only olduğundan image optimizasyon cache'i yazılamaz;
-    // optimizasyonu kapatıp görselleri olduğu gibi sun.
+    // The desktop package is read-only, so the image optimization cache cannot be written;
+    // disable optimization and serve images as-is.
     images: {
         unoptimized: true
     },
