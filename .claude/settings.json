@@ -13,7 +13,15 @@
       "PowerShell(Get-CimInstance Win32_Process -Filter \"name='node.exe'\" | Select-Object ProcessId, @{n='Cmd';e={$_.CommandLine}} | Format-Table -AutoSize -Wrap | Out-String -Width 200)",
       "PowerShell(Set-Location 'c:\\\\Users\\\\deniz\\\\Desktop\\\\next-desktop\\\\nextop-monorepo'; Write-Output \"=== Code.exe çalışıyor mu ===\"; \\(Get-Process Code -ErrorAction SilentlyContinue | Measure-Object\\).Count; Write-Output \"=== rename denemesi \\(cmd rmdir önce\\) ===\"; cmd /c \"rmdir /s /q test\" 2>$null; if \\(Test-Path test\\) { try { Rename-Item test \"test._locked_$\\(Get-Random\\)\" -ErrorAction Stop; Write-Output \"RENAME OK \\(engel kalktı\\)\" } catch { Write-Output \"RENAME HATA: $\\($_.Exception.Message\\)\" } } else { Write-Output \"cmd rmdir ile silindi\" }; Write-Output \"=== kök test/ var mı: $\\(Test-Path test\\) ===\")",
       "Bash(grep -nE '^\\\\$ |siliniyor|kaldırılıyor|Orphan|UYARI|tamamlandı' C:/Users/deniz/AppData/Local/Temp/claude/c--Users-deniz-Desktop-next-desktop-nextop-monorepo/ff70a19c-60c4-4d18-9a86-ab2126f53594/tasks/bzb3hvgii.output)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(ls -la docs)",
+      "Bash(ls -la docs.md)",
+      "Bash(ls README*)",
+      "Bash(cp README.md packages/nextop-app/README.md)",
+      "Bash(cp LICENSE packages/nextop-app/LICENSE)",
+      "Bash(cp LICENSE packages/create-nextop-app/LICENSE)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(npm pack *)"
     ]
   }
 }

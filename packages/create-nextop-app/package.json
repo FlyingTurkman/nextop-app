@@ -1,8 +1,18 @@
 {
   "name": "create-nextop-app",
-  "version": "0.0.8",
-  "description": "NextOP framework starter CLI",
+  "version": "1.0.0",
+  "description": "NextOP framework starter CLI — scaffold a Next.js + Electron desktop app, secure by default.",
+  "keywords": [
+    "nextjs",
+    "electron",
+    "desktop",
+    "react",
+    "scaffold",
+    "cli",
+    "nextop"
+  ],
   "license": "MIT",
+  "homepage": "https://nextopapp.vercel.app",
   "main": "./dist/index.js",
   "bin": {
     "create-nextop-app": "./dist/index.js"
@@ -15,6 +25,9 @@
     "type": "git",
     "url": "https://github.com/FlyingTurkman/nextop-app",
     "directory": "packages/create-nextop-app"
+  },
+  "bugs": {
+    "url": "https://github.com/FlyingTurkman/nextop-app/issues"
   },
   "scripts": {
     "build": "tsc",

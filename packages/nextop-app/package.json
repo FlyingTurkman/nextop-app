@@ -1,8 +1,18 @@
 {
   "name": "nextop-app",
   "version": "1.0.0",
-  "description": "",
+  "description": "The fullstack React framework for the desktop — a live Next.js server inside an Electron shell. Hooks, secure IPC, and the nextop CLI.",
+  "keywords": [
+    "nextjs",
+    "electron",
+    "desktop",
+    "react",
+    "ssr",
+    "framework",
+    "nextop"
+  ],
   "license": "MIT",
+  "homepage": "https://nextopapp.vercel.app",
   "main": "./dist/index.js",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -16,6 +26,9 @@
     "type": "git",
     "url": "https://github.com/FlyingTurkman/nextop-app",
     "directory": "packages/nextop-app"
+  },
+  "bugs": {
+    "url": "https://github.com/FlyingTurkman/nextop-app/issues"
   },
   "exports": {
     ".": {
