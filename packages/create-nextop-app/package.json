@@ -1,6 +1,6 @@
 {
   "name": "create-nextop-app",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "NextOP framework starter CLI — scaffold a Next.js + Electron desktop app, secure by default.",
   "keywords": [
     "nextjs",

@@ -1,6 +1,6 @@
 {
   "name": "nextop-app",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "The fullstack React framework for the desktop — a live Next.js server inside an Electron shell. Hooks, secure IPC, and the nextop CLI.",
   "keywords": [
     "nextjs",
