@@ -59,7 +59,8 @@ on `EADDRINUSE` (race-free — the server binds the port itself and reports the 
 │    ├─ new BrowserWindow({ contextIsolation, sandbox, nodeIntegration:false })│
 │    ├─ registerNextOP(mainWindow, options)   ← from "nextop-app/main"         │
 │    │     ├─ ipcMain handlers: fs, shell, clipboard, notification, menu,      │
-│    │     │   window controls, secure-store, internal windows                 │
+│    │     │   window controls, secure-store, store, dialog, tray,             │
+│    │     │   global-shortcut, internal windows                               │
 │    │     └─ navigation guards (will-navigate / setWindowOpenHandler)         │
 │    └─ startNextServer(dir, dev) → live Next.js on 127.0.0.1:<port>           │
 │                                                                              │
@@ -69,7 +70,8 @@ on `EADDRINUSE` (race-free — the server binds the port itself and reports the 
 ┌───────────────┴────────────────────────────────────────────────┴────────────┐
 │                       Renderer (your Next.js app)                            │
 │   React hooks: useFs, useWindow, useMenu, useShell, useNotification,         │
-│                useClipboard, useSecureStore                                   │
+│                useClipboard, useSecureStore, useSocket, useDialog,           │
+│                useTray, useGlobalShortcut, useStore                          │
 │   Components:  <Link> (nextop-app/link), <VirtualList> (nextop-app/...)      │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -410,6 +412,55 @@ if (await store.isAvailable()) {
 
 ---
 
+### `useSocket(url, options?)`
+
+A WebSocket client hook with auto-reconnect. It wraps the browser's **native** `WebSocket` API — no
+`socket.io-client`, no `ws`, no dependency at all. This works because `contextIsolation`/`sandbox`
+only block Node.js APIs in the renderer, not Web APIs; `WebSocket` is available exactly like in any
+browser tab. There is **no IPC channel** involved — the renderer connects directly to the target
+`ws://`/`wss://` server, bypassing the main process entirely.
+
+```ts
+const { status, lastMessage, send, connect, disconnect } = useSocket(url, options)
+```
+
+| Param/Member | Type | Notes |
+|--------------|------|-------|
+| `url` | `string \| null` | Pass `null` to skip connecting (e.g. while an auth token loads). |
+| `options.protocols` | `string \| string[]` | Forwarded to the `WebSocket` constructor. |
+| `options.reconnect` | `boolean` (default `true`) | Auto-reconnect after an unexpected close. |
+| `options.reconnectInterval` | `number` (default `2000`) | Delay in ms between reconnect attempts. |
+| `options.maxReconnectAttempts` | `number` (default `Infinity`) | Caps reconnect attempts. |
+| `options.onOpen/onClose/onError/onMessage` | callbacks | Raw DOM event/`MessageEvent` access. |
+| `status` | `'idle' \| 'connecting' \| 'open' \| 'closed' \| 'error'` | Current connection state. |
+| `lastMessage` | `MessageEvent \| null` | Most recent message received. |
+| `send` | `(data: string \| Blob \| BufferSource) => boolean` | Sends if open; returns `false` (no-op) otherwise. |
+| `connect` | `() => void` | Manually (re)connect. |
+| `disconnect` | `(code?, reason?) => void` | Closes and disables auto-reconnect for this instance. |
+
+```tsx
+'use client'
+import { useSocket } from 'nextop-app'
+
+export default function LiveTicker() {
+  const { status, lastMessage, send } = useSocket('wss://example.com/feed')
+
+  return (
+    <div>
+      <p>Status: {status}</p>
+      <button onClick={() => send(JSON.stringify({ type: 'ping' }))}>Ping</button>
+      {lastMessage && <p>Last: {lastMessage.data}</p>}
+    </div>
+  )
+}
+```
+
+> This connects to an **external** WebSocket server (your own backend, a realtime API, etc.). It is
+> not a way to push events from the Electron main process to the renderer — use `ipcRenderer` (via
+> the other hooks) for that; there's no socket round-trip needed for same-process communication.
+
+---
+
 ### `useMenu()`
 
 Set the native application menu. State-hook style (`[menu, setMenu]`).
@@ -457,6 +508,131 @@ setMenu([
   },
 ])
 ```
+
+---
+
+### `useDialog()`
+
+Native open/save dialogs (`dialog.showOpenDialog` / `showSaveDialog`). Picked paths are just
+strings — reading/writing them still goes through `useFs`'s own security mode (`fs.mode` /
+`fs.allowedRoots`), so this hook doesn't need a security mode of its own.
+
+```ts
+const { showOpenDialog, showSaveDialog } = useDialog()
+```
+
+| Member | Type | Notes |
+|--------|------|-------|
+| `showOpenDialog` | `(options?: NextopOpenDialogOptions) => Promise<string[] \| null>` | `null` if the user cancels. |
+| `showSaveDialog` | `(options?: NextopSaveDialogOptions) => Promise<string \| null>` | `null` if the user cancels. |
+
+```ts
+type NextopDialogFilter = { name: string; extensions: string[] }
+
+type NextopOpenDialogOptions = {
+  title?: string
+  defaultPath?: string
+  filters?: NextopDialogFilter[]
+  properties?: Array<'openFile' | 'openDirectory' | 'multiSelections' | 'showHiddenFiles'
+    | 'createDirectory' | 'promptToCreate' | 'noResolveAliases'
+    | 'treatPackageAsDirectory' | 'dontAddToRecent'>
+}
+
+type NextopSaveDialogOptions = { title?: string; defaultPath?: string; filters?: NextopDialogFilter[] }
+```
+
+```tsx
+const { showOpenDialog } = useDialog()
+const { writeFile } = useFs()
+
+const files = await showOpenDialog({ filters: [{ name: 'Images', extensions: ['png', 'jpg'] }] })
+if (files) await writeFile(files[0], '...')
+```
+
+---
+
+### `useTray(options?)`
+
+A system tray icon + context menu. Electron only meaningfully supports one tray icon per app, so
+the hook is a singleton — the first component that mounts it creates the tray; unmounting destroys
+it.
+
+```ts
+const { setToolTip, setMenu, onClick } = useTray({ tooltip: 'My App', menu: [...] })
+```
+
+| Param/Member | Type | Notes |
+|--------------|------|-------|
+| `options.tooltip` | `string` | Initial tooltip. |
+| `options.menu` | `NextopAppMenuItem[]` | Initial context menu (same shape as `useMenu`). |
+| `options.icon` | `string` | Overrides the default `assets/favicon.ico`. |
+| `setToolTip` | `(tooltip: string) => void` | Update the tooltip after creation. |
+| `setMenu` | `(menu: NextopAppMenuItem[]) => void` | Replace the context menu after creation. |
+| `onClick` | `(callback: () => void) => () => void` | Subscribes to tray icon clicks; returns an unsubscribe function. |
+
+```tsx
+'use client'
+import { useTray } from 'nextop-app'
+
+export default function TrayIcon() {
+  useTray({ tooltip: 'My App', menu: [{ role: 'quit' }] })
+  return null
+}
+```
+
+> Call `useTray` from exactly **one** component. The "singleton" is enforced on the main-process
+> side (a second `tray:create` is a no-op), but `tray:destroy` fires unconditionally on unmount — if
+> a second component also mounts/unmounts `useTray`, it will tear down the tray the first component
+> is still relying on.
+
+---
+
+### `useGlobalShortcut(accelerator, callback)`
+
+Registers a system-wide keyboard shortcut — fires even when the app isn't focused. Ref-counted in
+the main process, so multiple components registering the same accelerator don't unregister it out
+from under each other.
+
+```ts
+const { isRegistered } = useGlobalShortcut('CmdOrCtrl+Shift+K', () => { /* ... */ })
+```
+
+| Param/Member | Type | Notes |
+|--------------|------|-------|
+| `accelerator` | `string \| null` | Electron accelerator string. Pass `null` to skip registering. |
+| `callback` | `() => void` | Called when the shortcut fires. |
+| `isRegistered` | `boolean` | `false` if the OS/another app already reserved the accelerator. |
+
+```tsx
+useGlobalShortcut('CmdOrCtrl+Shift+K', () => setPaletteOpen(true))
+```
+
+---
+
+### `useStore()`
+
+Unencrypted, JSON-persisted key/value storage (electron-store-like) for settings/preferences —
+same shape as `useSecureStore`, but never encrypts. Backed by `userData/nextop-store.json`.
+
+```ts
+const { getItem, setItem, removeItem, hasItem, clear } = useStore<{ theme: string }>()
+```
+
+| Member | Type | Notes |
+|--------|------|-------|
+| `getItem` | `(key: string) => Promise<T \| null>` | `null` if the key is absent. |
+| `setItem` | `(key: string, value: T) => Promise<boolean>` | `T` must be JSON-serializable. |
+| `removeItem` | `(key: string) => Promise<boolean>` | |
+| `hasItem` | `(key: string) => Promise<boolean>` | |
+| `clear` | `() => Promise<boolean>` | Wipes the whole store. |
+
+```tsx
+const store = useStore<string>()
+await store.setItem('theme', 'dark')
+const theme = await store.getItem('theme')
+```
+
+> For tokens/secrets, use [`useSecureStore`](#usesecurestore) instead — this hook writes plaintext.
 
 ---
 
@@ -528,7 +704,7 @@ import VirtualList from 'nextop-app/virtual-list'
 
 | Import | Provides |
 |--------|----------|
-| `nextop-app` | All renderer hooks (`useFs`, `useWindow`, `useMenu`, `useNotification`, `useShell`, `useClipboard`, `useSecureStore`) and their types. |
+| `nextop-app` | All renderer hooks (`useFs`, `useWindow`, `useMenu`, `useNotification`, `useShell`, `useClipboard`, `useSecureStore`, `useSocket`, `useDialog`, `useTray`, `useGlobalShortcut`, `useStore`) and their types. |
 | `nextop-app/main` | `registerNextOP`, `NextOPOptions`, `FsOptions`, `ShellOptions`, `FsAccessMode`, `ShellAccessMode`. Main-process only. |
 | `nextop-app/link` | `<Link>` component + `LinkProps`, `InternalWindowOptions`. |
 | `nextop-app/virtual-list` | `<VirtualList>` component. |
@@ -626,6 +802,21 @@ User channels should use the `app:` prefix.
 | `secure-store:has` | invoke | `useSecureStore.hasItem` | `(key)` → `boolean` |
 | `secure-store:clear` | invoke | `useSecureStore.clear` | → `true` |
 | `open-internal-window` | send | `Link target="_blank"` | `(url, options?)` |
+| `dialog:showOpenDialog` | invoke | `useDialog.showOpenDialog` | `(options?)` → `string[] \| null` |
+| `dialog:showSaveDialog` | invoke | `useDialog.showSaveDialog` | `(options?)` → `string \| null` |
+| `tray:create` | invoke | `useTray` | `({ tooltip?, menuTemplate?, icon? })` → `true` |
+| `tray:destroy` | send | `useTray` (unmount) | — |
+| `tray:setToolTip` | send | `useTray.setToolTip` | `(tooltip)` |
+| `tray:setMenu` | send | `useTray.setMenu` | `(menuTemplate)` |
+| `tray:click` | on (main → renderer) | `useTray.onClick` | — |
+| `global-shortcut:register` | invoke | `useGlobalShortcut` | `(accelerator)` → `boolean` |
+| `global-shortcut:unregister` | send | `useGlobalShortcut` (unmount) | `(accelerator)` |
+| `global-shortcut:triggered` | on (main → renderer) | `useGlobalShortcut` | `(accelerator)` |
+| `store:get` | invoke | `useStore.getItem` | `(key)` → `T \| null` |
+| `store:set` | invoke | `useStore.setItem` | `(key, value)` → `true` |
+| `store:remove` | invoke | `useStore.removeItem` | `(key)` → `true` |
+| `store:has` | invoke | `useStore.hasItem` | `(key)` → `boolean` |
+| `store:clear` | invoke | `useStore.clear` | → `true` |
 
 ---
 
@@ -657,6 +848,15 @@ interface Window {
 }
 ```
 
+`index.d.ts` only types the three namespaced helpers above (`fs`, `window`, `menu`). Every other
+hook — `useNotification`, `useClipboard`, `useShell`, `useSecureStore`, `useSocket` (indirectly,
+via native `WebSocket`, no bridge at all), `useDialog`, `useTray`, `useGlobalShortcut`, `useStore`
+— goes through the **untyped generic bridge** `window.desktop.ipcRenderer: { send, on, invoke }`
+(also set up by `preload.ts`, allowlist-checked, but not declared in the global `Window` type).
+These hooks access it via `(window as any).desktop.ipcRenderer` rather than `window.desktop.fs`-style
+typed access. If you add a hook that needs a new channel, extend the allowlist in `preload.ts`
+(§10) — extending `index.d.ts` is optional/cosmetic, not required for it to work.
+
 ---
 
 ## 13. FAQ / gotchas
@@ -674,4 +874,12 @@ interface Window {
   `isAvailable()` first.
 - **Windows packaging fails on symlink/winCodeSign.** Enable Developer Mode or run the terminal as
   Administrator.
+- **`useDialog`'s `showOpenDialog`/`showSaveDialog` resolve `null`.** The user cancelled — this is
+  not an error, just check for `null` before using the result.
+- **`useGlobalShortcut`'s `isRegistered` stays `false`.** The accelerator is already reserved by the
+  OS or another app; `globalShortcut.register` returned `false`. Pick a different accelerator.
+- **`useTray` shows no icon / wrong icon.** It defaults to `electron/assets/favicon.ico` relative to
+  the compiled main process — pass `options.icon` with an absolute path to override.
+- **`useStore` vs `useSecureStore`.** `useStore` never encrypts (plaintext JSON on disk) — use it for
+  settings/preferences, not tokens or secrets.
 ```

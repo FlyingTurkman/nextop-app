@@ -63,7 +63,8 @@ port on `EADDRINUSE`.
 │    ├─ new BrowserWindow({ contextIsolation, sandbox, nodeIntegration:false })│
 │    ├─ registerNextOP(mainWindow, options)   ← from "nextop-app/main"         │
 │    │     ├─ ipcMain handlers: fs, shell, clipboard, notification, menu,      │
-│    │     │   window controls, secure-store, internal windows                 │
+│    │     │   window controls, secure-store, store, dialog, tray,             │
+│    │     │   global-shortcut, internal windows                               │
 │    │     └─ navigation guards (will-navigate / setWindowOpenHandler)         │
 │    └─ startNextServer(dir, dev) → live Next.js on 127.0.0.1:<port>           │
 └───────────────▲──────────────────────────────────────────────▲─────────────┘
@@ -72,7 +73,8 @@ port on `EADDRINUSE`.
 ┌───────────────┴────────────────────────────────────────────────┴────────────┐
 │                       Renderer (your Next.js app)                            │
 │   Hooks: useFs, useWindow, useMenu, useShell, useNotification,              │
-│          useClipboard, useSecureStore                                        │
+│          useClipboard, useSecureStore, useSocket, useDialog, useTray,       │
+│          useGlobalShortcut, useStore                                        │
 │   Components: <Link> (nextop-app/link), <VirtualList> (nextop-app/...)       │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -148,6 +150,11 @@ are safe during SSR / on the web (they no-op or return `null` when `window.deskt
 | `useClipboard()` | `readText` / `writeText` for the system clipboard. |
 | `useShell()` | Run an OS executable with an explicit args array. Disabled by default. |
 | `useSecureStore()` | Encrypted key/value secret storage backed by Electron `safeStorage`. |
+| `useSocket(url, options?)` | Native `WebSocket` client with auto-reconnect. No dependency, no IPC — connects directly from the renderer. |
+| `useDialog()` | Native open/save file dialogs (`showOpenDialog` / `showSaveDialog`). |
+| `useTray(options?)` | System tray icon + context menu (singleton). |
+| `useGlobalShortcut(accelerator, callback)` | System-wide keyboard shortcuts, ref-counted. |
+| `useStore()` | Unencrypted JSON key/value storage for settings/preferences. |
 | `useMenu()` | Set the native application menu (`[menu, setMenu]`). |
 
 ```tsx

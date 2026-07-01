@@ -1,5 +1,5 @@
 import { spawn } from "child_process"
-import { app, ipcMain, BrowserWindow, Menu, IpcMainEvent, MenuItemConstructorOptions, shell, Notification, clipboard, BrowserWindowConstructorOptions, dialog, WebContents, safeStorage } from "electron"
+import { app, ipcMain, BrowserWindow, Menu, IpcMainEvent, MenuItemConstructorOptions, shell, Notification, clipboard, BrowserWindowConstructorOptions, dialog, WebContents, safeStorage, Tray, globalShortcut, OpenDialogOptions, SaveDialogOptions } from "electron"
 import fs from 'fs/promises'
 import path from "path"
 import { fileURLToPath } from "url"
@@ -44,16 +44,16 @@ function attachNavigationGuards(contents: WebContents) {
 }
 
 
-/** Secure store: keeps encrypted entries in a single JSON file ({ [key]: base64(encryptedBlob) }). */
-async function readSecureStore(storeFile: string): Promise<Record<string, string>> {
+/** Generic JSON-file-backed key/value store, shared by useSecureStore and useStore. */
+async function readJsonStore<T = Record<string, unknown>>(storeFile: string): Promise<T> {
     try {
         return JSON.parse(await fs.readFile(storeFile, "utf-8"))
     } catch {
-        return {}
+        return {} as T
     }
 }
 
-async function writeSecureStore(storeFile: string, data: Record<string, string>): Promise<void> {
+async function writeJsonStore<T>(storeFile: string, data: T): Promise<void> {
     await fs.writeFile(storeFile, JSON.stringify(data), "utf-8")
 }
 
@@ -315,14 +315,14 @@ export function registerNextOP(mainWindow: BrowserWindow | null, options: NextOP
         if (!safeStorage.isEncryptionAvailable()) {
             throw new Error('NextOP: safeStorage is unavailable on this platform; the secret was not written.')
         }
-        const store = await readSecureStore(secureStoreFile)
+        const store = await readJsonStore<Record<string, string>>(secureStoreFile)
         store[key] = safeStorage.encryptString(value).toString('base64')
-        await writeSecureStore(secureStoreFile, store)
+        await writeJsonStore(secureStoreFile, store)
         return true
     })
 
     ipcMain.handle('secure-store:get', async (_event, key: string) => {
-        const store = await readSecureStore(secureStoreFile)
+        const store = await readJsonStore<Record<string, string>>(secureStoreFile)
         const blob = store[key]
         if (!blob) {
             return null
@@ -331,19 +331,19 @@ export function registerNextOP(mainWindow: BrowserWindow | null, options: NextOP
     })
 
     ipcMain.handle('secure-store:remove', async (_event, key: string) => {
-        const store = await readSecureStore(secureStoreFile)
+        const store = await readJsonStore<Record<string, string>>(secureStoreFile)
         delete store[key]
-        await writeSecureStore(secureStoreFile, store)
+        await writeJsonStore(secureStoreFile, store)
         return true
     })
 
     ipcMain.handle('secure-store:has', async (_event, key: string) => {
-        const store = await readSecureStore(secureStoreFile)
+        const store = await readJsonStore<Record<string, string>>(secureStoreFile)
         return Object.prototype.hasOwnProperty.call(store, key)
     })
 
     ipcMain.handle('secure-store:clear', async () => {
-        await writeSecureStore(secureStoreFile, {})
+        await writeJsonStore(secureStoreFile, {})
         return true
     })
 
@@ -367,5 +367,113 @@ export function registerNextOP(mainWindow: BrowserWindow | null, options: NextOP
         })
 
         newWindow.loadURL(url)
+    })
+
+    // useDialog: native open/save dialogs. Picked paths still go through useFs's own
+    // allowedRoots check when actually read/written — this only surfaces the OS picker.
+    ipcMain.handle('dialog:showOpenDialog', async (event, options?: OpenDialogOptions) => {
+        const win = BrowserWindow.fromWebContents(event.sender) ?? mainWindow ?? undefined
+        const result = win
+            ? await dialog.showOpenDialog(win, options ?? {})
+            : await dialog.showOpenDialog(options ?? {})
+        return result.canceled ? null : result.filePaths
+    })
+
+    ipcMain.handle('dialog:showSaveDialog', async (event, options?: SaveDialogOptions) => {
+        const win = BrowserWindow.fromWebContents(event.sender) ?? mainWindow ?? undefined
+        const result = win
+            ? await dialog.showSaveDialog(win, options ?? {})
+            : await dialog.showSaveDialog(options ?? {})
+        return result.canceled ? null : (result.filePath ?? null)
+    })
+
+    // useTray: a single tray icon for the app (Electron only supports meaningfully one per app).
+    let tray: Tray | null = null
+
+    ipcMain.handle('tray:create', (event, options?: { tooltip?: string; menuTemplate?: MenuItemConstructorOptions[]; icon?: string }) => {
+        if (tray) return true
+
+        tray = new Tray(options?.icon ?? path.join(__dirname, "assets", "favicon.ico"))
+        if (options?.tooltip) tray.setToolTip(options.tooltip)
+        if (options?.menuTemplate) tray.setContextMenu(Menu.buildFromTemplate(options.menuTemplate))
+        tray.on('click', () => event.sender.send('tray:click'))
+        return true
+    })
+
+    ipcMain.on('tray:destroy', () => {
+        tray?.destroy()
+        tray = null
+    })
+
+    ipcMain.on('tray:setToolTip', (_event, tooltip: string) => {
+        tray?.setToolTip(tooltip)
+    })
+
+    ipcMain.on('tray:setMenu', (_event, menuTemplate: MenuItemConstructorOptions[]) => {
+        tray?.setContextMenu(Menu.buildFromTemplate(menuTemplate))
+    })
+
+    // useGlobalShortcut: ref-counted so multiple components registering the same accelerator
+    // don't unregister it out from under each other.
+    const shortcutRefCounts = new Map<string, number>()
+
+    ipcMain.handle('global-shortcut:register', (event, accelerator: string) => {
+        const count = shortcutRefCounts.get(accelerator) ?? 0
+
+        if (count === 0) {
+            const ok = globalShortcut.register(accelerator, () => {
+                event.sender.send('global-shortcut:triggered', accelerator)
+            })
+            if (!ok) return false
+        }
+
+        shortcutRefCounts.set(accelerator, count + 1)
+        return true
+    })
+
+    ipcMain.on('global-shortcut:unregister', (_event, accelerator: string) => {
+        const count = shortcutRefCounts.get(accelerator) ?? 0
+
+        if (count <= 1) {
+            globalShortcut.unregister(accelerator)
+            shortcutRefCounts.delete(accelerator)
+        } else {
+            shortcutRefCounts.set(accelerator, count - 1)
+        }
+    })
+
+    app.on('will-quit', () => globalShortcut.unregisterAll())
+
+    // useStore: unencrypted JSON key/value storage (electron-store-like) for settings/preferences.
+    // For secrets, use useSecureStore instead — this never encrypts.
+    const storeFile = path.join(app.getPath("userData"), "nextop-store.json")
+
+    ipcMain.handle('store:get', async (_event, key: string) => {
+        const store = await readJsonStore(storeFile)
+        return key in store ? store[key] : null
+    })
+
+    ipcMain.handle('store:set', async (_event, key: string, value: unknown) => {
+        const store = await readJsonStore(storeFile)
+        store[key] = value
+        await writeJsonStore(storeFile, store)
+        return true
+    })
+
+    ipcMain.handle('store:remove', async (_event, key: string) => {
+        const store = await readJsonStore(storeFile)
+        delete store[key]
+        await writeJsonStore(storeFile, store)
+        return true
+    })
+
+    ipcMain.handle('store:has', async (_event, key: string) => {
+        const store = await readJsonStore(storeFile)
+        return Object.prototype.hasOwnProperty.call(store, key)
+    })
+
+    ipcMain.handle('store:clear', async () => {
+        await writeJsonStore(storeFile, {})
+        return true
     })
 }

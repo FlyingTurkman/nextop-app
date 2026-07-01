@@ -17,7 +17,16 @@ const INVOKE_CHANNELS = [
   "secure-store:get",
   "secure-store:remove",
   "secure-store:has",
-  "secure-store:clear"
+  "secure-store:clear",
+  "dialog:showOpenDialog",
+  "dialog:showSaveDialog",
+  "tray:create",
+  "global-shortcut:register",
+  "store:get",
+  "store:set",
+  "store:remove",
+  "store:has",
+  "store:clear"
 ]
 
 const SEND_CHANNELS = [
@@ -25,12 +34,18 @@ const SEND_CHANNELS = [
   "open-external",
   "show-notification",
   "write-clipboard",
-  "open-internal-window"
+  "open-internal-window",
+  "tray:destroy",
+  "tray:setToolTip",
+  "tray:setMenu",
+  "global-shortcut:unregister"
 ]
 
-// Channels that can be listened to (main → renderer). The framework uses none right now;
-// users can listen to their own channels with the "app:" prefix.
-const RECEIVE_CHANNELS: string[] = []
+// Channels that can be listened to (main → renderer).
+const RECEIVE_CHANNELS: string[] = [
+  "tray:click",
+  "global-shortcut:triggered"
+]
 
 const USER_CHANNEL_PREFIX = "app:"
 
