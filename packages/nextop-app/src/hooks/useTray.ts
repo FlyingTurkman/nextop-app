@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react"
-import type { NextopAppMenuItem } from "./useMenu"
+import type { NextopAppMenuItem } from "./useMenu.js"
 
 export type UseTrayOptions = {
     tooltip?: string
