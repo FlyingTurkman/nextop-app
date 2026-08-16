@@ -40,7 +40,7 @@ export default function Page() {
                             Star on GitHub
                             <span aria-hidden>↗</span>
                         </Link>
-                        <Link isExternal href="https://nextop-app.vercel.app" className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10">
+                        <Link isExternal href="https://nextopapp.vercel.app" className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10">
                             Docs
                             <span aria-hidden>↗</span>
                         </Link>

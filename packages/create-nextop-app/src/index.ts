@@ -86,6 +86,13 @@ program
         console.log(chalk.gray(`Files creating...`))
         await fs.copy(templatePath, targetPath)
 
+        // npm strips dotfiles like .gitignore from published tarballs, so the template ships it
+        // as "_gitignore" and it's renamed back on scaffold.
+        const gitignorePath = path.join(targetPath, '_gitignore')
+        if (fs.existsSync(gitignorePath)) {
+            await fs.move(gitignorePath, path.join(targetPath, '.gitignore'))
+        }
+
         const packPath = path.join(targetPath, 'package.json')
         if (fs.existsSync(packPath)) {
             const pack = await fs.readJson(packPath)
