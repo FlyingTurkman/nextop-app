@@ -1,20 +1,17 @@
 {
   "compilerOptions": {
-    "module": "nodenext",
+    "module": "esnext",
     "target": "es2020",
     "types": [],
     "lib": [
       "ES2020",
-      "DOM"
+      "DOM",
+      "DOM.Iterable"
     ],
     "esModuleInterop": true,
-    "moduleResolution": "nodenext",
+    "moduleResolution": "bundler",
     "skipDefaultLibCheck": true,
-    "outDir": "dist",
-    "rootDir": ".",
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
+    "noEmit": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "strict": true,
@@ -25,9 +22,11 @@
     "moduleDetection": "force",
     "skipLibCheck": true,
     "allowJs": true,
-    "noEmit": false,
     "incremental": true,
     "resolveJsonModule": true,
+    "paths": {
+      "@/*": ["./*"]
+    },
     "plugins": [
       {
         "name": "next"
@@ -35,22 +34,16 @@
     ]
   },
   "include": [
-    "main.ts",
-    "preload.ts",
-    "window.ts",
-    "types.ts",
-    "types.d.ts",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "electron/**/*.ts",
-    "electron/startNext.ts",
-    "**/*.d.ts",
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
     "dist",
-    ".next"
+    ".next",
+    "electron"
   ]
 }

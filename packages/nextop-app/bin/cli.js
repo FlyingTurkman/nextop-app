@@ -1,12 +1,25 @@
 #!/usr/bin/env node
 
 import { spawn, execSync } from 'child_process'
+import { existsSync } from 'fs'
+import path from 'path'
 
 
 /** Compiles the Electron layer (tsc) and copies assets to dist. Shared step for dev and build. */
 function compileElectron(root) {
   console.log("Compiling Electron (tsc)...")
-  execSync('npx tsc -p tsconfig.json', { cwd: root, stdio: 'inherit' })
+
+  // Newest scaffolds ship electron/tsconfig.json — living inside electron/ lets editors
+  // auto-discover it for files in that folder (a root-level tsconfig.electron.json isn't
+  // picked up by editor tooling, which otherwise treats every electron/*.ts file as an
+  // orphan with inferred compiler options). Older scaffolds fall back to a root-level
+  // tsconfig.electron.json, and the oldest to the original combined tsconfig.json.
+  const electronConfig = existsSync(path.join(root, 'electron', 'tsconfig.json'))
+    ? 'electron/tsconfig.json'
+    : existsSync(path.join(root, 'tsconfig.electron.json'))
+      ? 'tsconfig.electron.json'
+      : 'tsconfig.json'
+  execSync(`npx tsc -p ${electronConfig}`, { cwd: root, stdio: 'inherit' })
 
   console.log("Copying assets...")
   execSync('npx cpx "electron/assets/**/*" dist/electron/assets', { cwd: root, stdio: 'inherit' })
