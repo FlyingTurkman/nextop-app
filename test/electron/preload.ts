@@ -26,7 +26,9 @@ const INVOKE_CHANNELS = [
   "store:set",
   "store:remove",
   "store:has",
-  "store:clear"
+  "store:clear",
+  "theme:get",
+  "theme:setSource"
 ]
 
 const SEND_CHANNELS = [
@@ -44,7 +46,8 @@ const SEND_CHANNELS = [
 // Channels that can be listened to (main → renderer).
 const RECEIVE_CHANNELS: string[] = [
   "tray:click",
-  "global-shortcut:triggered"
+  "global-shortcut:triggered",
+  "theme:updated"
 ]
 
 const USER_CHANNEL_PREFIX = "app:"

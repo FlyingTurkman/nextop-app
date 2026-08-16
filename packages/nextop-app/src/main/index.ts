@@ -1,6 +1,7 @@
 import { spawn } from "child_process"
-import { app, ipcMain, BrowserWindow, Menu, IpcMainEvent, MenuItemConstructorOptions, shell, Notification, clipboard, BrowserWindowConstructorOptions, dialog, WebContents, safeStorage, Tray, globalShortcut, OpenDialogOptions, SaveDialogOptions } from "electron"
+import { app, ipcMain, BrowserWindow, Menu, IpcMainEvent, MenuItemConstructorOptions, shell, Notification, clipboard, BrowserWindowConstructorOptions, dialog, WebContents, safeStorage, Tray, globalShortcut, OpenDialogOptions, SaveDialogOptions, nativeTheme } from "electron"
 import fs from 'fs/promises'
+import { readFileSync, writeFileSync } from 'fs'
 import path from "path"
 import { fileURLToPath } from "url"
 
@@ -41,6 +42,68 @@ function attachNavigationGuards(contents: WebContents) {
         }
         return { action: 'deny' }
     })
+}
+
+
+/** Persisted window bounds, read/written by loadWindowState / trackWindowState. */
+export type WindowState = {
+    width: number
+    height: number
+    x?: number
+    y?: number
+    isMaximized?: boolean
+}
+
+/**
+ * Reads the last-persisted window bounds (if any) so they can be passed straight into
+ * `new BrowserWindow({...})`. Synchronous because it must run before window construction, at
+ * startup, so the small one-time blocking read is acceptable.
+ */
+export function loadWindowState(defaults: { width: number, height: number }, fileName = "nextop-window-state.json"): WindowState {
+    const file = path.join(app.getPath("userData"), fileName)
+    try {
+        const parsed = JSON.parse(readFileSync(file, "utf-8"))
+        if (typeof parsed.width === "number" && typeof parsed.height === "number") {
+            return parsed
+        }
+    } catch {
+        // No saved state yet, or the file is corrupt — fall back to defaults.
+    }
+    return { width: defaults.width, height: defaults.height }
+}
+
+/**
+ * Applies a previously loaded maximized state and starts persisting future size/position/
+ * maximize changes for `window`. Call once, right after the window is created.
+ */
+export function trackWindowState(window: BrowserWindow, state: WindowState, fileName = "nextop-window-state.json") {
+    const file = path.join(app.getPath("userData"), fileName)
+
+    if (state.isMaximized) {
+        window.maximize()
+    }
+
+    let saveTimeout: ReturnType<typeof setTimeout> | null = null
+
+    const save = () => {
+        if (window.isDestroyed()) return
+        const isMaximized = window.isMaximized()
+        const bounds = isMaximized ? window.getNormalBounds() : window.getBounds()
+        try {
+            writeFileSync(file, JSON.stringify({ ...bounds, isMaximized }))
+        } catch {
+            // Best-effort persistence; ignore write failures (e.g. read-only userData).
+        }
+    }
+
+    const debouncedSave = () => {
+        if (saveTimeout) clearTimeout(saveTimeout)
+        saveTimeout = setTimeout(save, 300)
+    }
+
+    window.on("resize", debouncedSave)
+    window.on("move", debouncedSave)
+    window.on("close", save)
 }
 
 
@@ -475,5 +538,27 @@ export function registerNextOP(mainWindow: BrowserWindow | null, options: NextOP
     ipcMain.handle('store:clear', async () => {
         await writeJsonStore(storeFile, {})
         return true
+    })
+
+    // useTheme: dark/light mode only, synced with Electron's nativeTheme. Pushes live updates to
+    // every window when the OS theme (or an explicit themeSource) changes.
+    ipcMain.handle('theme:get', () => ({
+        shouldUseDarkColors: nativeTheme.shouldUseDarkColors,
+        themeSource: nativeTheme.themeSource
+    }))
+
+    ipcMain.handle('theme:setSource', (_event, source: 'system' | 'light' | 'dark') => {
+        nativeTheme.themeSource = source
+        return nativeTheme.shouldUseDarkColors
+    })
+
+    nativeTheme.on('updated', () => {
+        const state = {
+            shouldUseDarkColors: nativeTheme.shouldUseDarkColors,
+            themeSource: nativeTheme.themeSource
+        }
+        for (const win of BrowserWindow.getAllWindows()) {
+            win.webContents.send('theme:updated', state)
+        }
     })
 }
